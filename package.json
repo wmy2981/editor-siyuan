@@ -1,0 +1,38 @@
+{
+  "name": "editor-siyuan",
+  "version": "0.1.0",
+  "description": "Open and edit the text files referenced by notes in a new SiYuan tab, styled like a code block",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build && node scripts/build-package.mjs",
+    "icon": "node scripts/render-icon.mjs && node scripts/render-preview.mjs",
+    "preview": "node scripts/render-preview.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "siyuan",
+    "plugin",
+    "editor",
+    "text",
+    "code"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@codemirror/commands": "^6.9.0",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/search": "^6.5.11",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.6"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "playwright": "^1.63.0",
+    "sass-embedded": "^1.104.1",
+    "sharp": "^0.35.4",
+    "siyuan": "^1.2.8",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  }
+}

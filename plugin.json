@@ -1,0 +1,40 @@
+{
+  "name": "editor-siyuan",
+  "author": "wmy2981",
+  "url": "https://github.com/wmy2981/editor-siyuan",
+  "version": "0.1.0",
+  "minAppVersion": "3.8.3",
+  "backends": [
+    "windows",
+    "linux",
+    "darwin"
+  ],
+  "frontends": [
+    "desktop",
+    "desktop-window"
+  ],
+  "disabledInPublish": true,
+  "displayName": {
+    "default": "Editor",
+    "zh-CN": "文本编辑器"
+  },
+  "description": {
+    "default": "Open and edit the text files referenced by notes in a new tab, styled like a code block",
+    "zh-CN": "在新建页签中打开并编辑笔记引用的文本文件，外观复刻思源代码块"
+  },
+  "readme": {
+    "default": "README.md",
+    "zh-CN": "README_zh_CN.md"
+  },
+  "icon": "icon.png",
+  "preview": "preview.png",
+  "keywords": [
+    "editor",
+    "code",
+    "text",
+    "assets",
+    "编辑",
+    "文本",
+    "代码"
+  ]
+}

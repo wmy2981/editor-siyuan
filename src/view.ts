@@ -8,10 +8,11 @@
  * / --b3-font-size-editor / --b3-border-color / --b3-list-hover）。
  * 语法配色仍然复用用户选定的那份 hljs 主题样式表，见 theme.ts。
  *
- * 顶部一条操作条：左侧是可点的语言标签，右侧是只读切换与保存。
+ * 顶部一条操作条：左侧是可点的语言标签，右侧依次是查找、只读切换与保存。
  * 图标按钮用 .ariaLabel + data-position，与思源自己的图标按钮同一套提示机制。
  */
 import {showMessage, type Custom} from "siyuan";
+import {openSearchPanel} from "@codemirror/search";
 import type {EditorView} from "@codemirror/view";
 import {readAssetText, resolveAsset, writeAssetText, type IAssetRef, type IAssetText} from "./asset";
 import {
@@ -82,6 +83,7 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     root.innerHTML = `<div class="editor-siyuan__action">
 <span class="editor-siyuan__language"></span>
 <span class="fn__flex-1"></span>
+<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="search"><svg><use xlink:href="#iconSearch"></use></svg></span>
 <span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="readonly"><svg><use xlink:href="#iconEye"></use></svg></span>
 <span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="save"><svg><use xlink:href="#${ICON_SAVE}"></use></svg></span>
 </div>
@@ -91,6 +93,7 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
 
     const mount = root.querySelector<HTMLElement>(".editor-siyuan__mount")!;
     const languageLabel = root.querySelector<HTMLElement>(".editor-siyuan__language")!;
+    const searchIcon = root.querySelector<HTMLElement>('[data-type="search"]')!;
     const saveIcon = root.querySelector<HTMLElement>('[data-type="save"]')!;
     const readonlyIcon = root.querySelector<HTMLElement>('[data-type="readonly"]')!;
 
@@ -115,6 +118,7 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     };
 
     const syncIcons = (): void => {
+        searchIcon.setAttribute("aria-label", t("find"));
         saveIcon.setAttribute("aria-label", dirty ? t("saveDirty") : t("save"));
         saveIcon.classList.toggle("editor-siyuan__icon--dirty", dirty);
         readonlyIcon.setAttribute("aria-label", readOnly ? t("switchToEdit") : t("switchToPreview"));
@@ -187,6 +191,11 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     });
     saveIcon.addEventListener("click", () => {
         void save();
+    });
+    searchIcon.addEventListener("click", () => {
+        if (editor) {
+            openSearchPanel(editor);
+        }
     });
     readonlyIcon.addEventListener("click", () => {
         readOnly = !readOnly;

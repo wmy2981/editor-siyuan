@@ -182,7 +182,13 @@
 //
 // .cm-panels 的底色是 CodeMirror 用 `&light .cm-panels` 写的，算下来是三个类
 // （0,3,0），所以这里必须用四个类的选择器才压得住。
+//
+// 同时要把它从「浮层」打回普通文档流：CodeMirror 给的是
+// position:sticky + z-index:300，在思源里这会让面板浮到宿主的页签栏、提示气泡
+// 之上。面板本来就是 .cm-scroller 的兄弟节点，不参与滚动，去掉这两条不影响位置。
 .editor-siyuan .cm-editor .cm-panels.cm-panels-top {
+  position: static;
+  z-index: auto;
   background-color: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
   border-bottom: 1px solid var(--b3-border-color);

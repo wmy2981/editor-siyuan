@@ -1,6 +1,6 @@
 # Editor
 
-Open and edit the text files a note links to, in a SiYuan tab of their own. The tab is styled as a SiYuan code block: the code font, the font size, the corner radius and the syntax colours all come from your own SiYuan settings.
+Open and edit the text files a note links to, in a SiYuan tab of their own. The editor uses your SiYuan code font and your chosen syntax colours, on the same background as a SiYuan note, so it reads as part of the app in both light and dark mode.
 
 The plugin icon and the marketplace preview are drawn by `assets/icon.svg` and `assets/preview.html`; `plugin.json` points at the rendered `icon.png` and `preview.png`.
 
@@ -69,7 +69,8 @@ These are consequences of the plugin API, not oversights.
 - **The file size limit cannot hand the click back to SiYuan.** Interception must happen synchronously, but the size is only known after asking the kernel. An oversized file therefore opens a tab that explains why it was not loaded and points at the link's context menu entry for opening it externally.
 - **Assets in encrypted notebooks are refused.** The kernel resolves them to a temporary plaintext copy; writing that copy back would silently discard the change.
 - **Highlighting reuses SiYuan's own static assets** at `/stage/protyle/js/highlight.js/` — the same script and stylesheet its code blocks use, so token classification and colours match exactly. If a future SiYuan version moves that path, highlighting degrades to plain text.
-- **Line numbers are CodeMirror's gutter**, restyled to SiYuan's metrics. SiYuan's own code block builds its line-number column by hand, so the two are not pixel-identical.
+- **Highlighting recomputes the whole document on every change** while one pass stays under 8 ms — measured with SiYuan's own highlight.js, that is roughly 100 000 characters of Markdown but only 10 000 of JavaScript. Larger files fall back to re-highlighting once you stop typing, so their colours settle a moment later.
+- **Line numbers are CodeMirror's gutter**, restyled to SiYuan's metrics and painted with the editor background. SiYuan's own code block builds its line-number column by hand, so the two are not pixel-identical.
 - **No detection of outside changes.** If another program edits the file while its tab is open, the change is not noticed until the tab is reopened.
 
 ## Development

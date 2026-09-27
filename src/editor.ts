@@ -17,6 +17,8 @@
  * 刻意不加 highlightSelectionMatches()：它会把光标所在词的所有其它出现位置
  * 高亮成写死的 #99ff7780（黄绿），既不跟随思源主题，又会在每次按键时随
  * 光标下的词批量亮灭，整屏多行跟着重绘。
+ *
+ * 搜索面板换成思源样式（见 search.ts），右键菜单交给 context-menu.ts。
  */
 import {
     Compartment,
@@ -39,9 +41,11 @@ import {
     ViewPlugin,
 } from "@codemirror/view";
 import {defaultKeymap, history, historyKeymap, indentWithTab} from "@codemirror/commands";
-import {search, searchKeymap} from "@codemirror/search";
+import {searchKeymap} from "@codemirror/search";
 import {indentOnInput, indentUnit} from "@codemirror/language";
 import {normalizeLanguage, PLAIN_TEXT} from "./language";
+import {siyuanSearch} from "./search";
+import type {T} from "./i18n";
 
 export const readOnlyCompartment = new Compartment();
 export const lineNumbersCompartment = new Compartment();
@@ -180,6 +184,10 @@ export interface IEditorOptions {
     lineWrap: boolean;
     /** 思源 editor.codeTabSpaces；0 表示用制表符。 */
     tabSpaces: number;
+    /** 搜索面板的文案。 */
+    t: T;
+    /** 正文里按下右键；搜索面板里的输入框不走这里，留给宿主自己的原生菜单。 */
+    onContextMenu?: (event: MouseEvent) => void;
     onChange: () => void;
 }
 
@@ -197,7 +205,7 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                 history(),
                 highlightSpecialChars(),
                 drawSelection(),
-                search({top: true}),
+                siyuanSearch(options.t),
                 indentOnInput(),
                 indentUnit.of(indent),
                 EditorState.tabSize.of(options.tabSpaces === 0 ? 4 : options.tabSpaces),
@@ -224,6 +232,16 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
         if (event.defaultPrevented) {
             event.stopPropagation();
         }
+    });
+    // 右键菜单：正文交回插件自建（思源自己的编辑器菜单只认 ProseMirror 选区），
+    // 搜索面板里的输入框则原样放行，让宿主弹它的 Electron 原生菜单。
+    view.dom.addEventListener("contextmenu", (event) => {
+        if (!options.onContextMenu || (event.target as HTMLElement).closest(".editor-siyuan-search")) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        options.onContextMenu(event);
     });
     return view;
 }

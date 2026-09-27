@@ -36,6 +36,7 @@ import {guessLanguage, PLAIN_TEXT} from "./language";
 import {loadHljs} from "./hljs";
 import {openLanguageMenu} from "./language-menu";
 import {openConfirmDialog} from "./dialog";
+import {openEditorMenu} from "./context-menu";
 import {ICON_SAVE} from "./icons";
 import {config, escapeHtml} from "./util";
 import type {T} from "./i18n";
@@ -263,6 +264,12 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
             showLineNumbers: lineNumbersWanted(),
             lineWrap: config().editor.codeLineWrap,
             tabSpaces: config().editor.codeTabSpaces,
+            t,
+            onContextMenu: (event) => {
+                if (editor) {
+                    openEditorMenu({view: editor, t, readOnly, onSave: () => void save()}, event.clientX, event.clientY);
+                }
+            },
             onChange: () => {
                 if (!dirty) {
                     dirty = true;

@@ -19,8 +19,8 @@
     "zh-CN": "文本编辑器"
   },
   "description": {
-    "default": "Open and edit the text files referenced by notes in a new tab, styled like a code block",
-    "zh-CN": "在新建页签中打开并编辑笔记引用的文本文件，外观复刻思源代码块"
+    "default": "Open and edit the text files referenced by notes in a new tab",
+    "zh-CN": "在新建页签中打开并编辑笔记引用的文本文件"
   },
   "readme": {
     "default": "README.md",
@@ -28,6 +28,11 @@
   },
   "icon": "icon.png",
   "preview": "preview.png",
+  "funding": {
+    "custom": [
+      "https://afdian.com/a/wmy2981"
+    ]
+  },
   "keywords": [
     "editor",
     "code",

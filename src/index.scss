@@ -174,44 +174,55 @@
   min-width: 0;
 }
 
-// 搜索面板：思源没有代码块内搜索的先例，按设置面板的观感拼一份
-.editor-siyuan .cm-editor .cm-panel.cm-search {
+// 搜索替换面板。
+// 面板里的控件全是思源自己的类（b3-text-field / b3-form__icon / block__icon /
+// b3-button），颜色、圆角、悬停、ariaLabel 提示都由思源自己的 CSS 提供，
+// 这里只补三件事：把 .cm-panels 的底色与描边换成思源的，把 .block__icons
+// 从 42px 的工具栏压成一行图标，再把它们排成一行。
+//
+// .cm-panels 的底色是 CodeMirror 用 `&light .cm-panels` 写的，算下来是三个类
+// （0,3,0），所以这里必须用四个类的选择器才压得住。
+.editor-siyuan .cm-editor .cm-panels.cm-panels-top {
   background-color: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
-  border-top: 1px solid var(--b3-border-color);
-  font-family: var(--b3-font-family);
-  font-size: 12px;
+  border-bottom: 1px solid var(--b3-border-color);
+}
+
+.editor-siyuan-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 6px 8px;
 
-  input {
-    background-color: var(--b3-theme-background);
-    color: var(--b3-theme-on-background);
-    border: 1px solid var(--b3-border-color);
-    border-radius: var(--b3-border-radius);
-    padding: 2px 6px;
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
-  button {
-    background-color: transparent;
-    border: 0;
-    border-radius: var(--b3-border-radius);
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-    padding: 2px 6px;
-    cursor: pointer;
+  &__field {
+    flex: 1;
+    min-width: 0;
 
-    &:hover {
-      background-color: var(--b3-list-hover);
+    .b3-text-field {
+      width: 100%;
     }
   }
 
-  button[name="close"] {
-    font-size: 16px;
-    line-height: 1;
-  }
+  // .block__icons 默认是 42px 高的块级工具栏；这里要的是与输入框同高的一串图标。
+  // 多带一个类名是为了稳压思源自己的 .block__icons（同为单类选择器，只靠加载顺序不可靠）。
+  &__flags.block__icons {
+    min-height: 0;
+    padding: 0;
+    gap: 2px;
+    flex-shrink: 0;
 
-  label {
-    font-size: 12px;
+    // 开关打开时按思源的惯例挂 ft__primary。思源自己的 base.css 里有这条规则，
+    // 这里再写一份是为了不依赖它——写的是 svg 自身，所以悬停时也不会被父级盖掉。
+    .ft__primary {
+      color: var(--b3-theme-primary);
+    }
   }
 }
 

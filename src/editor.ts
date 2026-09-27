@@ -4,10 +4,19 @@
  * 内核用 CodeMirror 6——行号、搜索替换、撤销重做、缩进、软换行都由它提供，
  * 但语法高亮不用它自带的解析器：思源代码块用的是 highlight.js，
  * 两套引擎的 token 划分不同（同一段代码，函数名和属性名会被分到不同的类别）。
- * 这里由 hljs 产出高亮结果，再转成 CodeMirror 的装饰层——装饰不改文档，
+ * 这里由 hljs 产出高亮结果，再转成 CodeMirror 的装饰——装饰不改文档，
  * 所以撤销重做不受影响，而 token 分类与配色与思源代码块逐字一致。
  *
- * 装饰是异步重建的（hljs 整篇重跑），长文件按体积放大防抖间隔。
+ * 高亮放在 StateField 里、随文档改动同步重算，而不是事后异步补算：
+ * 异步补算会在停止输入后一次性换掉整篇装饰，用户看到的是颜色"迟一步窜动"。
+ * 代价是每敲一键都要整篇重跑 hljs，所以按实测耗时自适应：一次整篇超过
+ * SYNC_BUDGET_MS 就退回「先映射旧装饰、停止输入后再补算」。
+ * 实测参考（本机，思源自带的那份 hljs）：markdown 50k 字符 3.8 ms、200k 15 ms；
+ * javascript 50k 42 ms、338k 277 ms。手写的文本与配置类文件基本都落在同步档里。
+ *
+ * 刻意不加 highlightSelectionMatches()：它会把光标所在词的所有其它出现位置
+ * 高亮成写死的 #99ff7780（黄绿），既不跟随思源主题，又会在每次按键时随
+ * 光标下的词批量亮灭，整屏多行跟着重绘。
  */
 import {
     Compartment,
@@ -30,7 +39,7 @@ import {
     ViewPlugin,
 } from "@codemirror/view";
 import {defaultKeymap, history, historyKeymap, indentWithTab} from "@codemirror/commands";
-import {highlightSelectionMatches, search, searchKeymap} from "@codemirror/search";
+import {search, searchKeymap} from "@codemirror/search";
 import {indentOnInput, indentUnit} from "@codemirror/language";
 import {normalizeLanguage, PLAIN_TEXT} from "./language";
 
@@ -38,20 +47,23 @@ export const readOnlyCompartment = new Compartment();
 export const lineNumbersCompartment = new Compartment();
 export const lineWrapCompartment = new Compartment();
 
+/** 一次整篇高亮超过这个耗时就不再逐键同步做。 */
+const SYNC_BUDGET_MS = 8;
+
+/** 大文件里退回防抖后，停止输入多久再补算。 */
+const delayFor = (length: number): number => (length > 200_000 ? 1200 : 250);
+
 const initialLanguage = Facet.define<string, string>({combine: (values) => values[0] ?? PLAIN_TEXT});
 const setLanguageEffect = StateEffect.define<string>();
+/** 防抖到期后要求补算一次整篇高亮。 */
+const recomputeEffect = StateEffect.define<null>();
 
-const languageField = StateField.define<string>({
-    create: (state) => state.facet(initialLanguage),
-    update: (value, transaction) => {
-        for (const effect of transaction.effects) {
-            if (effect.is(setLanguageEffect)) {
-                return effect.value;
-            }
-        }
-        return value;
-    },
-});
+interface IHighlight {
+    decorations: RangeSet<Decoration>;
+    language: string;
+    /** 上一次整篇高亮的实测耗时，用来决定下一次还能不能同步做。 */
+    cost: number;
+}
 
 /**
  * hljs 的输出是 HTML，把它还原成源码区间。
@@ -60,7 +72,7 @@ const languageField = StateField.define<string>({
  * 得到的就是源码偏移；类名原样保留（`.hljs-title.function_` 这类复合类名
  * 是主题选择器的依据，不能只留前缀）。
  */
-function highlightDecorations(text: string, language: string): RangeSet<Decoration> {
+function buildDecorations(text: string, language: string): RangeSet<Decoration> {
     const hljs = window.hljs;
     if (!hljs) {
         return Decoration.none;
@@ -90,47 +102,74 @@ function highlightDecorations(text: string, language: string): RangeSet<Decorati
     return Decoration.set(ranges, true);
 }
 
-/** 长文件的整篇重高亮会明显卡手，按体积放大防抖间隔。 */
-const delayFor = (length: number): number => (length > 200_000 ? 1200 : 250);
+function computeHighlight(text: string, language: string): IHighlight {
+    const started = performance.now();
+    const decorations = buildDecorations(text, language);
+    return {decorations, language, cost: performance.now() - started};
+}
 
-const hljsHighlighter = ViewPlugin.fromClass(class {
-    decorations: RangeSet<Decoration> = Decoration.none;
+const highlightField = StateField.define<IHighlight>({
+    create: (state) => computeHighlight(state.doc.toString(), state.facet(initialLanguage)),
+    update: (value, transaction) => {
+        let language = value.language;
+        let forced = false;
+        for (const effect of transaction.effects) {
+            if (effect.is(setLanguageEffect)) {
+                language = effect.value;
+            } else if (effect.is(recomputeEffect)) {
+                forced = true;
+            }
+        }
+        if (!transaction.docChanged && !forced && language === value.language) {
+            return value;
+        }
+        // 换语言是明确的单次操作，文档没变时也直接同步重算
+        if (forced || !transaction.docChanged || value.cost <= SYNC_BUDGET_MS) {
+            return computeHighlight(transaction.state.doc.toString(), language);
+        }
+        // 整篇重算太慢：先把旧装饰按改动映射过去（颜色仍然跟着原字符走），
+        // 停止输入后再由下面的插件补算一次。
+        return {decorations: value.decorations.map(transaction.changes), language, cost: value.cost};
+    },
+});
+
+/** 只在「同步档放不下」时工作：停止输入后补算一次整篇高亮。 */
+const hljsDebounce = ViewPlugin.fromClass(class {
     private timer: number | undefined;
 
     constructor(private readonly view: EditorView) {
-        this.schedule(0);
     }
 
     update(update: ViewUpdate): void {
-        const languageChanged =
-            update.startState.field(languageField) !== update.state.field(languageField);
-        if (update.docChanged || languageChanged) {
-            this.schedule(delayFor(update.state.doc.length));
+        if (!update.docChanged) {
+            return;
         }
+        if (update.state.field(highlightField).cost <= SYNC_BUDGET_MS) {
+            this.cancel();
+            return;
+        }
+        this.schedule(delayFor(update.state.doc.length));
     }
 
     destroy(): void {
+        this.cancel();
+    }
+
+    private cancel(): void {
         if (this.timer !== undefined) {
             window.clearTimeout(this.timer);
+            this.timer = undefined;
         }
     }
 
     private schedule(delay: number): void {
-        if (this.timer !== undefined) {
-            window.clearTimeout(this.timer);
-        }
+        this.cancel();
         this.timer = window.setTimeout(() => {
             this.timer = undefined;
-            this.decorations = highlightDecorations(
-                this.view.state.doc.toString(),
-                this.view.state.field(languageField),
-            );
-            // 空事务用来触发一次渲染，让上面的装饰生效。它既不改文档也不改选区，
-            // 因此不会进撤销栈，也不会再次触发本插件的 update。
-            this.view.dispatch({});
+            this.view.dispatch({effects: recomputeEffect.of(null)});
         }, delay);
     }
-}, {decorations: (instance) => instance.decorations});
+});
 
 export interface IEditorOptions {
     doc: string;
@@ -159,7 +198,6 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                 highlightSpecialChars(),
                 drawSelection(),
                 search({top: true}),
-                highlightSelectionMatches(),
                 indentOnInput(),
                 indentUnit.of(indent),
                 EditorState.tabSize.of(options.tabSpaces === 0 ? 4 : options.tabSpaces),
@@ -168,8 +206,9 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                 lineNumbersCompartment.of(options.showLineNumbers ? lineNumbers() : []),
                 lineWrapCompartment.of(options.lineWrap ? EditorView.lineWrapping : []),
                 initialLanguage.of(options.language),
-                languageField,
-                hljsHighlighter,
+                highlightField,
+                EditorView.decorations.from(highlightField, (value) => value.decorations),
+                hljsDebounce,
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
                         options.onChange();

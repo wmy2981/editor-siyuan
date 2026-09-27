@@ -1,0 +1,196 @@
+// 全部样式都挂在插件私有类名下，避免影响思源自身界面。
+//
+// 思源代码块的外观不复制粘贴：外壳直接用思源自己的类名
+// （.b3-typography / .code-block / .protyle-action / .protyle-action__language / .hljs），
+// 于是代码字体、字号、字重、圆角、内边距、操作条位置、悬停显隐、亮暗主题与代码高亮配色
+// 全部由思源的样式负责。这里只做三件事：
+//   1. 补上思源靠 `[data-node-id]` 选择器给的盒模型声明——那是真实块 ID 属性，不能伪造；
+//   2. 把 CodeMirror 的默认外观拉回思源的字体与配色体系；
+//   3. 插件自己的界面（占位文字、语言下拉、搜索面板、设置面板）一律用思源的主题变量。
+
+.editor-siyuan {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  // .b3-typography 自带 display:flex / flex-direction:column / font-size / font-family
+  &__typography {
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__block {
+    // 思源把这三条挂在 [data-node-id] 上，这里按同一套值补齐
+    line-height: 1.625;
+    padding: 4px;
+    margin: 2px 0;
+    border-radius: var(--b3-border-radius);
+    // .protyle-action 是绝对定位，需要块级定位参照
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  // div.hljs 自带 display:flex / position:relative / padding: 2em 1em 1.6em，
+  // 但它是自己滚动的；滚动交给 CodeMirror 的 cm-scroller，免得出现双层滚动条。
+  &__hljs {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  &__mount {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__placeholder {
+    flex: 1;
+    color: var(--b3-theme-on-surface);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    &--error {
+      color: var(--b3-theme-error);
+    }
+  }
+
+  // 有未保存改动时保存按钮一直可见：代码块的图标平时靠悬停显形，
+  // 但「还没保存」是用户必须看得见的状态，不能藏起来。
+  // 选择器比特意写得比思源的 `.b3-typography .code-block:not(pre) .protyle-icon` 更具体。
+  &__block &__action .protyle-icon--dirty {
+    opacity: .86;
+  }
+}
+
+// ---- CodeMirror 归位 ----
+// cm-scroller 自带 font-family: monospace，会盖掉 .hljs 的代码字体；
+// 下面这几条的权重都高于 CodeMirror 注入的基础主题。
+.b3-typography .editor-siyuan__hljs {
+  .cm-editor {
+    flex: 1;
+    min-height: 0;
+    background-color: transparent;
+    color: inherit;
+  }
+
+  .cm-scroller {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    overflow: auto;
+  }
+
+  // 内边距由 .hljs 提供，CodeMirror 自带的这份要去掉，否则会叠加
+  .cm-editor .cm-content {
+    padding: 0;
+    caret-color: var(--b3-theme-on-background);
+  }
+
+  .cm-editor .cm-line {
+    padding: 0;
+  }
+
+  // 选中态与思源一致：思源全局 ::selection 用的是 --b3-theme-primary-lighter
+  .cm-selectionBackground {
+    background-color: var(--b3-theme-primary-lighter);
+  }
+
+  .cm-cursor {
+    border-left-color: var(--b3-theme-on-background);
+  }
+
+  // 行号列。思源自己的 .protyle-linenumber__rows 除工具栏内一处外没有任何专属样式，
+  // 颜色继承代码正文；这里保持一致，靠内边距与对齐把数字和正文分开。
+  .cm-gutters {
+    background-color: transparent;
+    border: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  .cm-lineNumbers .cm-gutterElement {
+    padding: 0 8px 0 0;
+    min-width: 20px;
+    text-align: right;
+  }
+
+  // 搜索面板：思源没有代码块内搜索的先例，这里按设置面板的观感拼一份
+  .cm-panel.cm-search {
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    border-top: 1px solid var(--b3-border-color);
+    border-radius: 0 0 var(--b3-border-radius) var(--b3-border-radius);
+    font-family: var(--b3-font-family);
+    font-size: 12px;
+    padding: 6px 8px;
+
+    input {
+      background-color: var(--b3-theme-background);
+      color: var(--b3-theme-on-background);
+      border: 1px solid var(--b3-border-color);
+      border-radius: var(--b3-border-radius);
+      padding: 2px 6px;
+    }
+
+    button {
+      background-color: transparent;
+      border: 0;
+      border-radius: var(--b3-border-radius);
+      color: var(--b3-theme-on-surface);
+      font-size: 12px;
+      padding: 2px 6px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: var(--b3-list-hover);
+      }
+    }
+
+    button[name="close"] {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    label {
+      font-size: 12px;
+    }
+  }
+}
+
+// ---- 语言下拉 ----
+// .b3-menu__filter 自带 min-width:260px / max-width:420px，不放开会把搜索框卡在菜单中间。
+.b3-menu__filter.editor-siyuan__lang-filter {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 60vh;
+
+  .b3-list {
+    overflow: auto;
+    min-height: 120px;
+  }
+}
+
+// ---- 设置面板 ----
+.editor-siyuan-settings__stack {
+  gap: 8px;
+  width: 100%;
+
+  textarea.b3-text-field {
+    font-family: var(--b3-font-family-code);
+    resize: vertical;
+    min-height: 120px;
+    max-height: 320px;
+  }
+}

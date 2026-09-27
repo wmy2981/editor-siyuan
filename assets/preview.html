@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editor — preview</title>
+<style>
+    /* 市集预览图：1024x768，由 scripts/render-preview.mjs 用 Playwright 截图。
+       只做抽象构图，不表现任何具体功能界面。 */
+    body {
+        width: 1024px;
+        height: 768px;
+        margin: 0;
+        overflow: hidden;
+        background-color: #3575f0;
+        font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .stage {
+        position: relative;
+        width: 1024px;
+        height: 768px;
+    }
+
+    .stage > svg {
+        position: absolute;
+        inset: 0;
+        display: block;
+    }
+
+    /* 与深色代码块共用同一条左对齐轴（x = 96）。 */
+    .wordmark {
+        position: absolute;
+        left: 96px;
+        top: 640px;
+        color: #ffffff;
+        font-size: 32px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.01em;
+    }
+</style>
+</head>
+<body>
+<div class="stage">
+    <svg width="1024" height="768" viewBox="0 0 1024 768" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!--
+          蓝色的底是思源主题主色；深色的那一块就是代码块本身，底色用的是思源暗色默认
+          代码主题 github-dark 的真实值 #0d1117。下面每根色条的颜色也都取自那个主题的
+          真实 token：关键字 #ff7b72、字符串 #a5d6ff、函数 #d2a8ff、类型 #79c0ff、
+          名字 #7ee787、注释 #8b949e。这张图要说的就是：配色不是插件定的，是跟随用户设置的。
+        -->
+        <rect x="96" y="120" width="832" height="488" fill="#0d1117"/>
+
+        <!-- 正在编辑的那一行，用一层极淡的底色标出来 -->
+        <rect x="96" y="370" width="832" height="32" fill="#ffffff" fill-opacity="0.07"/>
+
+        <!-- 其余各行。只表示「这里有代码、它是有颜色的」，不表示任何语法 -->
+        <g>
+            <rect x="140" y="202" width="92" height="16" fill="#ff7b72"/>
+            <rect x="244" y="202" width="220" height="16" fill="#a5d6ff"/>
+            <rect x="476" y="202" width="190" height="16" fill="#8b949e"/>
+
+            <rect x="140" y="246" width="340" height="16" fill="#8b949e"/>
+
+            <rect x="140" y="290" width="74" height="16" fill="#ff7b72"/>
+            <rect x="226" y="290" width="260" height="16" fill="#a5d6ff"/>
+            <rect x="498" y="290" width="150" height="16" fill="#79c0ff"/>
+
+            <rect x="140" y="334" width="150" height="16" fill="#d2a8ff"/>
+            <rect x="302" y="334" width="96" height="16" fill="#7ee787"/>
+            <rect x="410" y="334" width="360" height="16" fill="#a5d6ff"/>
+
+            <rect x="140" y="422" width="270" height="16" fill="#a5d6ff"/>
+            <rect x="422" y="422" width="70" height="16" fill="#ff7b72"/>
+
+            <rect x="140" y="466" width="210" height="16" fill="#7ee787"/>
+            <rect x="362" y="466" width="240" height="16" fill="#8b949e"/>
+
+            <rect x="140" y="510" width="112" height="16" fill="#79c0ff"/>
+            <rect x="264" y="510" width="168" height="16" fill="#8b949e"/>
+            <rect x="444" y="510" width="250" height="16" fill="#d2a8ff"/>
+        </g>
+
+        <!-- 光标：全图唯一的实心白，也是唯一的竖笔画 -->
+        <rect x="140" y="378" width="96" height="16" fill="#ff7b72"/>
+        <rect x="248" y="370" width="8" height="32" fill="#ffffff"/>
+    </svg>
+    <div class="wordmark">Editor</div>
+</div>
+</body>
+</html>

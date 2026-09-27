@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <!--
+    市集图标：160x160、PNG 上限 64KiB，由 scripts/render-icon.mjs 栅格化。
+    底色是思源主题主色（daylight 主题里 theme-primary 变量的 #3575f0），直角满幅，不做圆角。
+    图形与 src/icons.ts 里的页签图标同构：一对等宽方括号夹一个光标条——
+    方括号是「引用」的语法，光标条是「编辑」的隐喻。这里用同一个 24 单位坐标系的
+    路径按 5 倍放大，保证两处图形的比例完全一致。
+  -->
+  <rect width="160" height="160" fill="#3575f0"/>
+  <g transform="translate(20 20) scale(5)" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h2.5"/>
+    <path d="M14.5 4.5H17A2.5 2.5 0 0 1 19.5 7v10A2.5 2.5 0 0 1 17 19.5h-2.5"/>
+    <path d="M12 8v8"/>
+  </g>
+</svg>

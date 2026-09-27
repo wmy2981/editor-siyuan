@@ -1,8 +1,7 @@
 # Editor
 
-Open and edit the text files a note links to, in a SiYuan tab of their own. The editor uses your SiYuan code font and your chosen syntax colours, on the same background as a SiYuan note, so it reads as part of the app in both light and dark mode.
+Open and edit the text files a note links to, in a SiYuan tab of their own. The editor uses your SiYuan code font and your chosen syntax colours.
 
-The plugin icon and the marketplace preview are drawn by `assets/icon.svg` and `assets/preview.html`; `plugin.json` points at the rendered `icon.png` and `preview.png`.
 
 ## What it does
 
@@ -84,12 +83,6 @@ npm run icon       # re-render assets/icon.png and assets/preview.png
 npm run preview    # re-shoot assets/preview.png from assets/preview.html alone
 ```
 
-`npm run icon` needs Chromium for Playwright: `npx playwright install chromium` once per machine.
-
-The bundle must stay CommonJS. SiYuan wraps plugin code in `(function anonymous(require, module, exports){...})` and evaluates it, so ESM output fails at the first `import`.
-
-Comments in the source are written in Chinese.
-
 ## License
 
-MIT
+[MIT](./LICENSE)

@@ -1,8 +1,6 @@
 # Editor
 
-在思源自己的页签里打开、编辑笔记链接到的文本文件。编辑器用你的思源代码字体与你选定的语法配色，背景与思源笔记一致，因此深色浅色模式下都像是思源自己的一部分。
-
-插件图标与市集预览图分别由 `assets/icon.svg` 与 `assets/preview.html` 绘制，`plugin.json` 指向渲染出的 `icon.png` 与 `preview.png`。
+在思源自己的页签里打开、编辑笔记链接到的文本文件。编辑器用你的思源代码字体与你选定的语法配色。
 
 ## 它做什么
 
@@ -84,12 +82,6 @@ npm run icon       # 重新生成 assets/icon.png 与 assets/preview.png
 npm run preview    # 仅按 assets/preview.html 重拍 assets/preview.png
 ```
 
-`npm run icon` 用 Playwright 截图，首次使用前需要 `npx playwright install chromium`。
-
-产物必须是 CommonJS。思源会把插件代码包进 `(function anonymous(require, module, exports){...})` 再求值，输出 ESM 会在第一个 `import` 处直接失败。
-
-源码注释用中文。
-
 ## 许可证
 
-MIT
+[MIT](./LICENSE)

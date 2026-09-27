@@ -1,12 +1,15 @@
 /**
- * 页签内的编辑器视图：复刻思源代码块的外壳，里面装 CodeMirror。
+ * 页签内的编辑器视图。
  *
- * 外观不自己画：外壳用 `.b3-typography` + `.code-block` + `.protyle-action` + `.hljs`
- * 这套思源自己的类名，于是代码字体（--b3-font-family-editor-code）、字号（--b3-font-size-editor）、
- * 圆角（--b3-border-radius）、操作条位置、悬停显隐全部自动跟随用户设置与主题；
- * 配色则由 theme.ts 挂上同一份 hljs 主题样式表。
- * 这里只补三处思源靠 `[data-node-id]` 选择器给、而我们不能伪造该属性（它代表真实块 ID）
- * 的盒模型声明：line-height、padding、border-radius。
+ * 外观不再照搬代码块：代码块是「嵌在正文里的一块卡片」，自带背景与操作条，
+ * 而这里是一整个页签，背景应当跟随思源编辑器背景（深色浅色各用各的），
+ * 所以外壳用插件自己的类名，颜色全部取自思源的 CSS 变量
+ * （--b3-theme-background / --b3-theme-on-background / --b3-font-family-editor-code
+ * / --b3-font-size-editor / --b3-border-color / --b3-list-hover）。
+ * 语法配色仍然复用用户选定的那份 hljs 主题样式表，见 theme.ts。
+ *
+ * 顶部一条操作条：左侧是可点的语言标签，右侧是只读切换与保存。
+ * 图标按钮用 .ariaLabel + data-position，与思源自己的图标按钮同一套提示机制。
  */
 import {showMessage, type Custom} from "siyuan";
 import type {EditorView} from "@codemirror/view";
@@ -30,6 +33,7 @@ import {
     type Settings,
 } from "./config";
 import {guessLanguage, PLAIN_TEXT} from "./language";
+import {loadHljs} from "./hljs";
 import {openLanguageMenu} from "./language-menu";
 import {openConfirmDialog} from "./dialog";
 import {ICON_SAVE} from "./icons";
@@ -74,22 +78,18 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
 
     const root = document.createElement("div");
     root.className = "editor-siyuan";
-    root.innerHTML = `<div class="b3-typography editor-siyuan__typography">
-<div class="code-block editor-siyuan__block" data-type="NodeCodeBlock">
-<div class="protyle-action editor-siyuan__action">
-<span class="protyle-action--first protyle-action__language"></span>
+    root.innerHTML = `<div class="editor-siyuan__action">
+<span class="editor-siyuan__language"></span>
 <span class="fn__flex-1"></span>
-<span class="ariaLabel protyle-icon protyle-icon--first" data-position="4north" data-type="readonly"><svg><use xlink:href="#iconEye"></use></svg></span>
-<span class="ariaLabel protyle-icon protyle-icon--last" data-position="4north" data-type="save"><svg><use xlink:href="#${ICON_SAVE}"></use></svg></span>
+<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="readonly"><svg><use xlink:href="#iconEye"></use></svg></span>
+<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="save"><svg><use xlink:href="#${ICON_SAVE}"></use></svg></span>
 </div>
-<div class="hljs editor-siyuan__hljs">
+<div class="editor-siyuan__body">
 <div class="editor-siyuan__mount"></div>
-</div>
-</div>
 </div>`;
 
     const mount = root.querySelector<HTMLElement>(".editor-siyuan__mount")!;
-    const languageLabel = root.querySelector<HTMLElement>(".protyle-action__language")!;
+    const languageLabel = root.querySelector<HTMLElement>(".editor-siyuan__language")!;
     const saveIcon = root.querySelector<HTMLElement>('[data-type="save"]')!;
     const readonlyIcon = root.querySelector<HTMLElement>('[data-type="readonly"]')!;
 
@@ -249,6 +249,12 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
             return;
         }
         dirty = doc !== data.text;
+        // 高亮引擎没就绪就直接建编辑器的话，首次渲染会是无色的，
+        // 而 StateField 只在文档变化时才重算，用户要敲一下才会看到颜色。
+        await loadHljs();
+        if (disposed) {
+            return;
+        }
         mount.innerHTML = "";
         editor = createEditor(mount, {
             doc,

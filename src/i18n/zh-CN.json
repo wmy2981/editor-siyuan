@@ -53,5 +53,6 @@
   "forgetTip": "会记住每个文件选择的语言、光标位置，以及未保存的暂存内容",
   "forgetButton": "清除（{count}）",
   "forgotten": "已清除记住的内容",
-  "settingsSaved": "设置已保存"
+  "settingsSaved": "设置已保存",
+  "settingsFailed": "设置无法写入工作空间"
 }

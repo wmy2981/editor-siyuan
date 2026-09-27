@@ -53,5 +53,6 @@
   "forgetTip": "Remembers the language chosen per file, the cursor position, and stashed changes",
   "forgetButton": "Clear ({count})",
   "forgotten": "Remembered state cleared",
-  "settingsSaved": "Settings saved"
+  "settingsSaved": "Settings saved",
+  "settingsFailed": "Settings could not be written to the workspace"
 }

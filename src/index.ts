@@ -28,7 +28,14 @@ export default class EditorPlugin extends Plugin {
         this.t = makeT(this.i18n);
         this.addIcons(ICONS);
         await initStore(this);
-        this.settings = normalizeSettings(await this.loadData(SETTINGS_FILE));
+        // 只读模式下 loadData 会 reject，取不到就退回默认值，不能让插件整体加载失败
+        let stored: unknown;
+        try {
+            stored = await this.loadData(SETTINGS_FILE);
+        } catch {
+            stored = undefined;
+        }
+        this.settings = normalizeSettings(stored);
 
         watchCodeTheme(this);
         // 思源只在渲染过代码块后才加载 highlight.js，这里先把它备好，第一次打开页签就能直接上色
@@ -90,7 +97,13 @@ export default class EditorPlugin extends Plugin {
 
     private async applySettings(next: Settings): Promise<void> {
         this.settings = next;
-        await this.saveData(SETTINGS_FILE, next);
+        try {
+            await this.saveData(SETTINGS_FILE, next);
+        } catch (error) {
+            // 只读模式下写盘会被拒；设置本身仍在本进程内生效
+            showMessage(`${this.t("settingsFailed")}: ${error instanceof Error ? error.message : String(error)}`, 6000, "error");
+            return;
+        }
         refreshLineNumbers(next);
         showMessage(this.t("settingsSaved"), 2000);
     }

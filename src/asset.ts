@@ -86,7 +86,7 @@ export async function resolveAsset(link: string): Promise<TResolveResult> {
         // 传原始链接：加密笔记本的 ?box=<boxID> 要靠内核自己解析
         const resolved = await postJson<string>(RESOLVE_ASSET, {path: link});
         if (resolved.code !== 0) {
-            return {kind: "error", message: resolved.msg};
+            return {kind: "error", message: resolved.msg || `code ${resolved.code}`};
         }
         const apiPath = toApiPath(resolved.data);
         if (!apiPath) {
@@ -95,7 +95,8 @@ export async function resolveAsset(link: string): Promise<TResolveResult> {
         }
         const stat = await postJson<{size: number}>(STAT_ASSET, {path: link});
         if (stat.code !== 0) {
-            return {kind: "error", message: stat.msg};
+            // 内核在这里用 code 1 表示资源定位不到
+            return {kind: "error", message: stat.msg || `code ${stat.code}`};
         }
         return {kind: "ok", ref: {link: link.split("?")[0], apiPath, size: stat.data.size}};
     } catch (error) {

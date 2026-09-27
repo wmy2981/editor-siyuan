@@ -1,44 +1,87 @@
 // 全部样式都挂在插件私有类名下，避免影响思源自身界面。
 //
-// 思源代码块的外观不复制粘贴：外壳直接用思源自己的类名
-// （.b3-typography / .code-block / .protyle-action / .protyle-action__language / .hljs），
-// 于是代码字体、字号、字重、圆角、内边距、操作条位置、悬停显隐、亮暗主题与代码高亮配色
-// 全部由思源的样式负责。这里只做三件事：
-//   1. 补上思源靠 `[data-node-id]` 选择器给的盒模型声明——那是真实块 ID 属性，不能伪造；
-//   2. 把 CodeMirror 的默认外观拉回思源的字体与配色体系；
-//   3. 插件自己的界面（占位文字、语言下拉、搜索面板、设置面板）一律用思源的主题变量。
+// 这里刻意不照搬代码块的样式。代码块是「嵌在正文里的一块卡片」：自带底色、
+// 自带浮在正文上的操作条。而本插件占据一整个页签，身份更接近思源的文档编辑器，
+// 所以背景取思源编辑器的背景色（--b3-theme-background，深色浅色模式各用各的），
+// 顶部用一条独立操作条而不是浮层。字体、字号、分隔线、悬停色全部走思源的 CSS 变量。
+//
+// 语法配色仍然复用用户选定的那份 hljs 主题样式表（见 theme.ts），
+// 那些 .hljs-keyword 之类的类名是全局的，不依赖任何祖先类名。
+//
+// 选择器权重说明：CodeMirror 的基础主题经 buildTheme 处理后每条规则都是
+// `.ͼN .sel`（两个类，0,2,0），并且它的 <style> 是在创建编辑器时才插进 head 的，
+// 也就是排在插件样式之后。所以这里一律用「三个类」的选择器（0,3,0）压过它，
+// 而不是靠 !important 或插入顺序。
 
 .editor-siyuan {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  // 跟随思源编辑器背景，深色浅色模式自动切换
+  background-color: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
 
-  // .b3-typography 自带 display:flex / flex-direction:column / font-size / font-family
-  &__typography {
-    flex: 1;
-    min-height: 0;
+  // ---- 顶部操作条 ----
+  &__action {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+    padding: 4px 6px 4px 10px;
+    border-bottom: 1px solid var(--b3-border-color);
   }
 
-  &__block {
-    // 思源把这三条挂在 [data-node-id] 上，这里按同一套值补齐
-    line-height: 1.625;
-    padding: 4px;
-    margin: 2px 0;
+  // 语言标签：可点，点开是语言下拉
+  &__language {
+    color: var(--b3-theme-on-surface);
+    font-size: 12px;
+    line-height: 20px;
+    padding: 0 6px;
     border-radius: var(--b3-border-radius);
-    // .protyle-action 是绝对定位，需要块级定位参照
-    position: relative;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color: var(--b3-theme-on-background);
+      background-color: var(--b3-list-hover);
+    }
+  }
+
+  // 图标按钮：尺寸与圆角对齐思源自己的图标按钮
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--b3-border-radius);
+    color: var(--b3-theme-on-surface);
+    cursor: pointer;
+
+    svg {
+      display: block;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      color: var(--b3-theme-on-background);
+      background-color: var(--b3-list-hover);
+    }
+
+    // 有未保存改动时保存按钮一直显形并带主色：这是用户必须看得见的状态
+    &--dirty {
+      color: var(--b3-theme-primary);
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-
-  // div.hljs 自带 display:flex / position:relative / padding: 2em 1em 1.6em，
-  // 但它是自己滚动的；滚动交给 CodeMirror 的 cm-scroller，免得出现双层滚动条。
-  &__hljs {
-    overflow: hidden;
-    min-height: 0;
   }
 
   &__mount {
@@ -51,6 +94,7 @@
 
   &__placeholder {
     flex: 1;
+    padding: 12px;
     color: var(--b3-theme-on-surface);
     font-size: 12px;
     line-height: 1.6;
@@ -61,109 +105,113 @@
       color: var(--b3-theme-error);
     }
   }
-
-  // 有未保存改动时保存按钮一直可见：代码块的图标平时靠悬停显形，
-  // 但「还没保存」是用户必须看得见的状态，不能藏起来。
-  // 选择器比特意写得比思源的 `.b3-typography .code-block:not(pre) .protyle-icon` 更具体。
-  &__block &__action .protyle-icon--dirty {
-    opacity: .86;
-  }
 }
 
 // ---- CodeMirror 归位 ----
-// cm-scroller 自带 font-family: monospace，会盖掉 .hljs 的代码字体；
-// 下面这几条的权重都高于 CodeMirror 注入的基础主题。
-.b3-typography .editor-siyuan__hljs {
-  .cm-editor {
-    flex: 1;
-    min-height: 0;
-    background-color: transparent;
-    color: inherit;
+.editor-siyuan .cm-editor {
+  flex: 1;
+  min-height: 0;
+  background-color: transparent;
+  color: inherit;
+
+  // CodeMirror 自带一圈 1px dotted 的聚焦外框，在页签里就是一圈多余的线
+  &.cm-focused {
+    outline: none;
+  }
+}
+
+.editor-siyuan .cm-editor .cm-scroller {
+  // 代码字体与字号跟随思源的代码字体设置；行高与思源编辑器一致
+  font-family: var(--b3-font-family-editor-code, var(--b3-font-family-code));
+  font-size: var(--b3-font-size-editor);
+  font-weight: var(--b3-font-weight-editor-code, 400);
+  line-height: 1.625;
+  color: inherit;
+  background-color: transparent;
+  // 顶部留一点呼吸位。内边距放在 scroller 上而不是 cm-content 上：
+  // cm-content 的上内边距会把正文压低，而行号列不会有同样的偏移，两者就对不齐了。
+  box-sizing: border-box;
+  padding-top: 6px;
+}
+
+.editor-siyuan .cm-editor .cm-content {
+  padding: 0;
+  caret-color: var(--b3-theme-on-background);
+}
+
+.editor-siyuan .cm-editor .cm-line {
+  padding: 0 12px 0 0;
+}
+
+// 选中态与思源一致：思源全局 ::selection 用的是 --b3-theme-primary-lighter
+.editor-siyuan .cm-editor .cm-selectionBackground {
+  background-color: var(--b3-theme-primary-lighter);
+}
+
+.editor-siyuan .cm-editor .cm-cursor {
+  border-left-color: var(--b3-theme-on-background);
+}
+
+// CodeMirror 默认把控制字符染成写死的红色
+.editor-siyuan .cm-editor .cm-specialChar {
+  color: var(--b3-theme-error);
+}
+
+// 行号列。
+// 背景必须不透明：CodeMirror 的行号列是 sticky 的，横向滚动时正文会滑到它下面，
+// 透明背景会让两段文字叠在一起。
+.editor-siyuan .cm-editor .cm-gutters {
+  background-color: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface-light);
+  border: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.editor-siyuan .cm-editor .cm-lineNumbers .cm-gutterElement {
+  padding: 0 10px 0 12px;
+  min-width: 0;
+}
+
+// 搜索面板：思源没有代码块内搜索的先例，按设置面板的观感拼一份
+.editor-siyuan .cm-editor .cm-panel.cm-search {
+  background-color: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  border-top: 1px solid var(--b3-border-color);
+  font-family: var(--b3-font-family);
+  font-size: 12px;
+  padding: 6px 8px;
+
+  input {
+    background-color: var(--b3-theme-background);
+    color: var(--b3-theme-on-background);
+    border: 1px solid var(--b3-border-color);
+    border-radius: var(--b3-border-radius);
+    padding: 2px 6px;
   }
 
-  .cm-scroller {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    overflow: auto;
-  }
-
-  // 内边距由 .hljs 提供，CodeMirror 自带的这份要去掉，否则会叠加
-  .cm-editor .cm-content {
-    padding: 0;
-    caret-color: var(--b3-theme-on-background);
-  }
-
-  .cm-editor .cm-line {
-    padding: 0;
-  }
-
-  // 选中态与思源一致：思源全局 ::selection 用的是 --b3-theme-primary-lighter
-  .cm-selectionBackground {
-    background-color: var(--b3-theme-primary-lighter);
-  }
-
-  .cm-cursor {
-    border-left-color: var(--b3-theme-on-background);
-  }
-
-  // 行号列。思源自己的 .protyle-linenumber__rows 除工具栏内一处外没有任何专属样式，
-  // 颜色继承代码正文；这里保持一致，靠内边距与对齐把数字和正文分开。
-  .cm-gutters {
+  button {
     background-color: transparent;
     border: 0;
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
-  }
-
-  .cm-lineNumbers .cm-gutterElement {
-    padding: 0 8px 0 0;
-    min-width: 20px;
-    text-align: right;
-  }
-
-  // 搜索面板：思源没有代码块内搜索的先例，这里按设置面板的观感拼一份
-  .cm-panel.cm-search {
-    background-color: var(--b3-theme-surface);
+    border-radius: var(--b3-border-radius);
     color: var(--b3-theme-on-surface);
-    border-top: 1px solid var(--b3-border-color);
-    border-radius: 0 0 var(--b3-border-radius) var(--b3-border-radius);
-    font-family: var(--b3-font-family);
     font-size: 12px;
-    padding: 6px 8px;
+    padding: 2px 6px;
+    cursor: pointer;
 
-    input {
-      background-color: var(--b3-theme-background);
-      color: var(--b3-theme-on-background);
-      border: 1px solid var(--b3-border-color);
-      border-radius: var(--b3-border-radius);
-      padding: 2px 6px;
+    &:hover {
+      background-color: var(--b3-list-hover);
     }
+  }
 
-    button {
-      background-color: transparent;
-      border: 0;
-      border-radius: var(--b3-border-radius);
-      color: var(--b3-theme-on-surface);
-      font-size: 12px;
-      padding: 2px 6px;
-      cursor: pointer;
+  button[name="close"] {
+    font-size: 16px;
+    line-height: 1;
+  }
 
-      &:hover {
-        background-color: var(--b3-list-hover);
-      }
-    }
-
-    button[name="close"] {
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    label {
-      font-size: 12px;
-    }
+  label {
+    font-size: 12px;
   }
 }
 

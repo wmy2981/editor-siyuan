@@ -1,6 +1,6 @@
 {
   "name": "editor-siyuan",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Open and edit the text files referenced by notes in a new SiYuan tab, styled like a code block",
   "type": "module",
   "private": true,

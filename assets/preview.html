@@ -5,7 +5,14 @@
 <title>Editor — preview</title>
 <style>
     /* 市集预览图：1024x768，由 scripts/render-preview.mjs 用 Playwright 截图。
-       只做抽象构图，不表现任何具体功能界面。 */
+       只做抽象构图，不表现任何具体功能界面。
+
+       思源把这张图放进 .item__preview（width:100%、height:50%、background-size:cover），
+       容器的宽高比跟着窗口走，图片会被等比裁掉一圈。容器比 4:3 扁就裁上下，比 4:3 方
+       就裁左右，所以构图必须落进「裁切安全区」，否则边缘的字会被切掉一半。
+       本图按容器宽高比 0.45 到 1.1 估算，安全区约为 x∈[160,864]、y∈[154,614]。
+       于是整组内容垂直居中在 y=384（图片中线，cover 的裁切左右上下都对称），
+       深色块取 672x384，四边留出的余量足够吸收最坏情况的裁切。 */
     body {
         width: 1024px;
         height: 768px;
@@ -28,11 +35,11 @@
         display: block;
     }
 
-    /* 与深色代码块共用同一条左对齐轴（x = 96）。 */
+    /* 与深色代码块共用同一条左对齐轴（x = 176）。 */
     .wordmark {
         position: absolute;
-        left: 96px;
-        top: 640px;
+        left: 176px;
+        top: 574px;
         color: #ffffff;
         font-size: 32px;
         font-weight: 600;
@@ -50,41 +57,41 @@
           真实 token：关键字 #ff7b72、字符串 #a5d6ff、函数 #d2a8ff、类型 #79c0ff、
           名字 #7ee787、注释 #8b949e。这张图要说的就是：配色不是插件定的，是跟随用户设置的。
         -->
-        <rect x="96" y="120" width="832" height="488" fill="#0d1117"/>
+        <rect x="176" y="162" width="672" height="384" fill="#0d1117"/>
 
         <!-- 正在编辑的那一行，用一层极淡的底色标出来 -->
-        <rect x="96" y="370" width="832" height="32" fill="#ffffff" fill-opacity="0.07"/>
+        <rect x="176" y="357" width="672" height="32" fill="#ffffff" fill-opacity="0.07"/>
 
         <!-- 其余各行。只表示「这里有代码、它是有颜色的」，不表示任何语法 -->
         <g>
-            <rect x="140" y="202" width="92" height="16" fill="#ff7b72"/>
-            <rect x="244" y="202" width="220" height="16" fill="#a5d6ff"/>
-            <rect x="476" y="202" width="190" height="16" fill="#8b949e"/>
+            <rect x="220" y="214" width="76" height="14" fill="#ff7b72"/>
+            <rect x="304" y="214" width="190" height="14" fill="#a5d6ff"/>
+            <rect x="502" y="214" width="150" height="14" fill="#8b949e"/>
 
-            <rect x="140" y="246" width="340" height="16" fill="#8b949e"/>
+            <rect x="220" y="252" width="290" height="14" fill="#8b949e"/>
 
-            <rect x="140" y="290" width="74" height="16" fill="#ff7b72"/>
-            <rect x="226" y="290" width="260" height="16" fill="#a5d6ff"/>
-            <rect x="498" y="290" width="150" height="16" fill="#79c0ff"/>
+            <rect x="220" y="290" width="60" height="14" fill="#ff7b72"/>
+            <rect x="288" y="290" width="220" height="14" fill="#a5d6ff"/>
+            <rect x="516" y="290" width="130" height="14" fill="#79c0ff"/>
 
-            <rect x="140" y="334" width="150" height="16" fill="#d2a8ff"/>
-            <rect x="302" y="334" width="96" height="16" fill="#7ee787"/>
-            <rect x="410" y="334" width="360" height="16" fill="#a5d6ff"/>
+            <rect x="220" y="328" width="130" height="14" fill="#d2a8ff"/>
+            <rect x="358" y="328" width="90" height="14" fill="#7ee787"/>
+            <rect x="456" y="328" width="290" height="14" fill="#a5d6ff"/>
 
-            <rect x="140" y="422" width="270" height="16" fill="#a5d6ff"/>
-            <rect x="422" y="422" width="70" height="16" fill="#ff7b72"/>
+            <rect x="220" y="404" width="230" height="14" fill="#a5d6ff"/>
+            <rect x="458" y="404" width="56" height="14" fill="#ff7b72"/>
 
-            <rect x="140" y="466" width="210" height="16" fill="#7ee787"/>
-            <rect x="362" y="466" width="240" height="16" fill="#8b949e"/>
+            <rect x="220" y="442" width="170" height="14" fill="#7ee787"/>
+            <rect x="398" y="442" width="210" height="14" fill="#8b949e"/>
 
-            <rect x="140" y="510" width="112" height="16" fill="#79c0ff"/>
-            <rect x="264" y="510" width="168" height="16" fill="#8b949e"/>
-            <rect x="444" y="510" width="250" height="16" fill="#d2a8ff"/>
+            <rect x="220" y="480" width="90" height="14" fill="#79c0ff"/>
+            <rect x="318" y="480" width="140" height="14" fill="#8b949e"/>
+            <rect x="466" y="480" width="210" height="14" fill="#d2a8ff"/>
         </g>
 
         <!-- 光标：全图唯一的实心白，也是唯一的竖笔画 -->
-        <rect x="140" y="378" width="96" height="16" fill="#ff7b72"/>
-        <rect x="248" y="370" width="8" height="32" fill="#ffffff"/>
+        <rect x="220" y="366" width="76" height="14" fill="#ff7b72"/>
+        <rect x="304" y="358" width="7" height="30" fill="#ffffff"/>
     </svg>
     <div class="wordmark">Editor</div>
 </div>

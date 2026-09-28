@@ -23,7 +23,8 @@
  * 高亮成写死的 #99ff7780（黄绿），既不跟随思源主题，又会在每次按键时随
  * 光标下的词批量亮灭，整屏多行跟着重绘。
  *
- * 搜索面板换成思源样式（见 search.ts），右键菜单交给 context-menu.ts。
+ * 搜索面板换成思源样式（见 search.ts），⌘F 与顶栏的查找按钮都是开/关同一个面板；
+ * 右键菜单交给 context-menu.ts。
  */
 import {
     Compartment,
@@ -49,7 +50,7 @@ import {defaultKeymap, history, historyKeymap, indentWithTab} from "@codemirror/
 import {searchKeymap} from "@codemirror/search";
 import {indentOnInput, indentUnit} from "@codemirror/language";
 import {normalizeLanguage, PLAIN_TEXT} from "./language";
-import {siyuanSearch} from "./search";
+import {siyuanSearch, toggleSearchPanel} from "./search";
 import type {T} from "./i18n";
 
 export const readOnlyCompartment = new Compartment();
@@ -262,7 +263,15 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                 indentOnInput(),
                 indentUnit.of(indent),
                 EditorState.tabSize.of(options.tabSpaces === 0 ? 4 : options.tabSpaces),
-                keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+                keymap.of([
+                    // ⌘F 是开关而不只是打开，所以压在 searchKeymap 之前：
+                    // 同一批绑定里靠前的那条先命中，返回 true 后面的就不再跑。
+                    {key: "Mod-f", run: toggleSearchPanel, scope: "editor search-panel"},
+                    ...defaultKeymap,
+                    ...historyKeymap,
+                    ...searchKeymap,
+                    indentWithTab,
+                ]),
                 readOnlyCompartment.of(readOnlyExtensions(options.readOnly)),
                 lineNumbersCompartment.of(options.showLineNumbers ? lineNumbers() : []),
                 lineWrapCompartment.of(options.lineWrap ? EditorView.lineWrapping : []),

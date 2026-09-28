@@ -13,7 +13,6 @@
  * 悬浮提示弹出时会压住第一行代码，得不偿失。
  */
 import {showMessage, type Custom} from "siyuan";
-import {openSearchPanel} from "@codemirror/search";
 import type {EditorView} from "@codemirror/view";
 import {readAssetText, resolveAsset, writeAssetText, type IAssetRef, type IAssetText} from "./asset";
 import {
@@ -36,6 +35,7 @@ import {
 } from "./config";
 import {guessLanguage, PLAIN_TEXT} from "./language";
 import {loadHljs} from "./hljs";
+import {closeSearch, toggleSearchPanel} from "./search";
 import {openLanguageMenu} from "./language-menu";
 import {openConfirmDialog} from "./dialog";
 import {openEditorMenu} from "./context-menu";
@@ -195,7 +195,14 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     });
     searchIcon.addEventListener("click", () => {
         if (editor) {
-            openSearchPanel(editor);
+            toggleSearchPanel(editor);
+        }
+    });
+    // 右键＝只收起：面板占着正文上方一行，收起来要能一步到位
+    searchIcon.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        if (editor) {
+            closeSearch(editor);
         }
     });
     readonlyIcon.addEventListener("click", () => {

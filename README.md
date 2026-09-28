@@ -56,8 +56,10 @@ The save shortcut is registered as a plugin command. Change it under **Settings 
 | Key | Action |
 | --- | --- |
 | `Ctrl+S` / `Cmd+S` | Save the file in the active editor tab. Rebindable. |
-| `Ctrl+F` / `Cmd+F` | Search inside the file |
+| `Ctrl+F` / `Cmd+F` | Open the in-file search panel, or close it when it is open |
 | `Ctrl+W` / `Cmd+W` | SiYuan's own "close tab"; asks for confirmation when there are unsaved changes |
+
+The search icon in the tab's action bar does the same: it toggles the panel. Right-clicking it closes the panel without opening it.
 
 ## Known limitations
 

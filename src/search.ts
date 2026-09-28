@@ -1,10 +1,14 @@
 /**
  * 搜索替换面板。
  *
- * 搜索本身仍然是 @codemirror/search 在做：查询对象、命中高亮、⌘F / F3 快捷键、
+ * 搜索本身仍然是 @codemirror/search 在做：查询对象、命中高亮、F3 上下条、
  * 面板开关都是它的，这里只通过 search() 的 createPanel 钩子把那层壳换掉。
  * 换壳的理由：CodeMirror 自带的面板用浏览器默认控件、标签写死英文，
  * 和思源界面完全不像。
+ *
+ * ⌘F 与顶栏按钮做成同一个开关：面板开着就收起，没开就打开（toggleSearchPanel）。
+ * CodeMirror 自带的 Mod-f 只负责打开，所以键位表里那条要压在 searchKeymap 之前，
+ * 见 editor.ts。
  *
  * 新壳按思源的控件规范拼：b3-form__icon + b3-text-field 做输入框，
  * block__icon + block__icon--show 做图标按钮，b3-button--small/--outline 做按钮，
@@ -21,9 +25,11 @@ import {
     findNext,
     findPrevious,
     getSearchQuery,
+    openSearchPanel,
     replaceAll,
     replaceNext,
     search,
+    searchPanelOpen,
     SearchQuery,
     setSearchQuery,
 } from "@codemirror/search";
@@ -31,6 +37,34 @@ import type {Extension} from "@codemirror/state";
 import type {EditorView, Panel, ViewUpdate} from "@codemirror/view";
 import {escapeHtml} from "./util";
 import type {T} from "./i18n";
+
+/**
+ * 查找面板的开关：没开就打开，开着就收起并把焦点交回正文。
+ * ⌘F、顶栏按钮、面板里再按一次 ⌘F 都走这一条。
+ */
+export const toggleSearchPanel = (view: EditorView): boolean => {
+    if (!searchPanelOpen(view.state)) {
+        return openSearchPanel(view);
+    }
+    closeSearchPanel(view);
+    // 收起是从按钮或面板发起的，活动元素不在正文里，得手动把焦点还回去
+    view.focus();
+    return true;
+};
+
+/** 只收不打开：顶栏按钮的右键用它。面板本来就没开时什么也不做。 */
+export const closeSearch = (view: EditorView): boolean => {
+    if (!searchPanelOpen(view.state)) {
+        return false;
+    }
+    closeSearchPanel(view);
+    view.focus();
+    return true;
+};
+
+/** ⌘F / Ctrl+F。CodeMirror 的键名 Mod-f 在 mac 上就是 ⌘F。 */
+const isSearchKey = (event: KeyboardEvent): boolean =>
+    (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "f";
 
 /** 三个开关，顺序即界面上的顺序。 */
 const FLAGS = ["caseSensitive", "wholeWord", "regexp"] as const;
@@ -48,8 +82,7 @@ const FLAG_LABEL: Record<TFlag, string> = {
     regexp: "searchRegex",
 };
 
-// main-field 是给 @codemirror/search 认的：面板已经打开时再按一次 ⌘F，
-// openSearchPanel 会靠这个属性找到输入框并重新聚焦、选中。
+// main-field 是给 @codemirror/search 认的：openSearchPanel 靠它找到输入框并聚焦。
 const searchField = (t: T): string =>
     `<input class="b3-text-field b3-form__icon-input" data-type="search" main-field="true" autocomplete="off" spellcheck="false" placeholder="${escapeHtml(t("searchPlaceholder"))}" aria-label="${escapeHtml(t("searchPlaceholder"))}">`;
 
@@ -101,11 +134,11 @@ ${iconButton("close", "iconClose", t("searchClose"))}
         this.replaceField.value = this.query.replace;
 
         // 面板不在 contentDOM 里，CodeMirror 的键盘映射收不到这里的按键，
-        // 所以回车、Esc 得自己接。同时一律掐断冒泡：在查找框里敲 ⌘F
+        // 所以 Esc、⌘F、回车得自己接。同时一律掐断冒泡：在查找框里敲 ⌘F
         // 不该再触发思源的全局搜索。
         this.dom.addEventListener("keydown", (event) => {
             event.stopPropagation();
-            if (event.key === "Escape") {
+            if (event.key === "Escape" || isSearchKey(event)) {
                 event.preventDefault();
                 closeSearchPanel(this.view);
                 return;

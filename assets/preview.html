@@ -5,21 +5,28 @@
 <title>Editor — preview</title>
 <style>
     /* 市集预览图：1024x768，由 scripts/render-preview.mjs 用 Playwright 截图。
-       只做抽象构图，不表现任何具体功能界面。
+       画面是插件页签本身的样子：一条顶部操作条（左侧语言标签、右侧查找 / 只读 / 保存），
+       下面是行号列与带语法配色的正文。所有数值都取自插件自己的样式与思源浅色主题：
+       页面底色 --b3-theme-surface #f6f6f6、编辑器底色 --b3-theme-background #fff、
+       描边 --b3-border-color #e0e0e0、正文 --b3-theme-on-background #222、
+       次要文字 --b3-theme-on-surface #5f6368、行号 --b3-theme-on-surface-light、
+       主色 --b3-theme-primary #3575f0（保存按钮的未保存态）、圆角 --b3-border-radius 6px。
+       代码配色取思源浅色默认代码主题 github 的 token 颜色，正文颜色仍是编辑器的 #222
+       ——插件不套 .hljs 根类，所以那份主题里的 .hljs{color} 不参与。
 
-       思源把这张图放进 .item__preview（width:100%、height:50%、background-size:cover），
-       容器的宽高比跟着窗口走，图片会被等比裁掉一圈。容器比 4:3 扁就裁上下，比 4:3 方
-       就裁左右，所以构图必须落进「裁切安全区」，否则边缘的字会被切掉一半。
+       思源把这张图放进集市详情页的 .item__preview（width:100%、height:50%、
+       background-size:cover），容器宽高比跟着窗口走，图片会被等比裁掉一圈。容器比 4:3
+       扁就裁上下，比 4:3 方就裁左右，所以构图必须落进「裁切安全区」，否则边缘会被切掉。
        本图按容器宽高比 0.45 到 1.1 估算，安全区约为 x∈[160,864]、y∈[154,614]。
-       于是整组内容垂直居中在 y=384（图片中线，cover 的裁切左右上下都对称），
-       深色块取 672x384，四边留出的余量足够吸收最坏情况的裁切。 */
+       编辑器卡片取 672x432 并垂直居中在图片中线 y=384（cover 的裁切上下左右都对称），
+       四边余量足够吸收最坏情况的裁切。 */
     body {
         width: 1024px;
         height: 768px;
         margin: 0;
         overflow: hidden;
-        background-color: #3575f0;
-        font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background-color: #eef0f3;
+        font-family: BlinkMacSystemFont, Helvetica, "Segoe UI", arial, sans-serif;
         -webkit-font-smoothing: antialiased;
     }
 
@@ -29,71 +36,180 @@
         height: 768px;
     }
 
-    .stage > svg {
-        position: absolute;
-        inset: 0;
-        display: block;
-    }
-
-    /* 与深色代码块共用同一条左对齐轴（x = 176）。 */
-    .wordmark {
+    /* 编辑器页签：白底卡片，与顶部的操作条共用同一条左对齐轴 */
+    .tab {
         position: absolute;
         left: 176px;
-        top: 574px;
-        color: #ffffff;
-        font-size: 32px;
-        font-weight: 600;
-        line-height: 1;
-        letter-spacing: -0.01em;
+        top: 168px;
+        width: 672px;
+        height: 432px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ---- 顶部操作条 ---- */
+    .tab__action {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        gap: 4px;
+        padding: 4px 6px 4px 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .tab__language {
+        color: #5f6368;
+        font-size: 12px;
+        line-height: 20px;
+        padding: 0 6px;
+        border-radius: 6px;
+    }
+
+    .tab__grow {
+        flex: 1;
+    }
+
+    .tab__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        color: #5f6368;
+    }
+
+    .tab__icon svg {
+        display: block;
+        width: 16px;
+        height: 16px;
+    }
+
+    /* 有未保存改动时保存按钮一直是主色 */
+    .tab__icon--dirty {
+        color: #3575f0;
+    }
+
+    /* ---- 正文 ---- */
+    .tab__body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        /* 与 .cm-scroller 的 padding-top 一致 */
+        padding-top: 6px;
+    }
+
+    .tab__gutter,
+    .tab__code {
+        margin: 0;
+        font-family: "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", monospace;
+        font-size: 16px;
+        line-height: 1.625;
+        white-space: pre;
+    }
+
+    /* 行号列：背景不透明，正文横向滚动时不会叠到它下面 */
+    .tab__gutter {
+        flex-shrink: 0;
+        padding: 0 10px 0 12px;
+        text-align: right;
+        color: rgba(95, 99, 104, 0.68);
+        background-color: #ffffff;
+    }
+
+    .tab__code {
+        flex: 1;
+        min-width: 0;
+        padding-right: 12px;
+        /* 插件不套 .hljs 根类，正文颜色就是编辑器的 on-background */
+        color: #222222;
+    }
+
+    /* 光标：全图唯一的竖笔画 */
+    .caret {
+        display: inline-block;
+        width: 2px;
+        height: 22px;
+        margin-left: 1px;
+        vertical-align: -3px;
+        background-color: #222222;
+    }
+
+    /* ---- 代码配色（思源浅色默认代码主题 github）---- */
+    .hljs-comment {
+        color: #6a737d;
+    }
+
+    .hljs-keyword {
+        color: #d73a49;
+    }
+
+    .hljs-title,
+    .hljs-title.function_ {
+        color: #6f42c1;
+    }
+
+    .hljs-attr,
+    .hljs-literal {
+        color: #005cc5;
+    }
+
+    .hljs-string {
+        color: #032f62;
     }
 </style>
 </head>
 <body>
 <div class="stage">
-    <svg width="1024" height="768" viewBox="0 0 1024 768" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <!--
-          蓝色的底是思源主题主色；深色的那一块就是代码块本身，底色用的是思源暗色默认
-          代码主题 github-dark 的真实值 #0d1117。下面每根色条的颜色也都取自那个主题的
-          真实 token：关键字 #ff7b72、字符串 #a5d6ff、函数 #d2a8ff、类型 #79c0ff、
-          名字 #7ee787、注释 #8b949e。这张图要说的就是：配色不是插件定的，是跟随用户设置的。
-        -->
-        <rect x="176" y="162" width="672" height="384" fill="#0d1117"/>
+    <div class="tab">
+        <div class="tab__action">
+            <span class="tab__language">javascript</span>
+            <span class="tab__grow"></span>
+            <span class="tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>
+            <span class="tab__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span class="tab__icon tab__icon--dirty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg></span>
+        </div>
+        <div class="tab__body">
+            <pre class="tab__gutter"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15</pre>
+            <!-- 下面的标记是这段示例代码的真实 hljs 输出（javascript，ignoreIllegals） -->
+            <pre class="tab__code"><span class="hljs-comment">// Token colours come from SiYuan: the same highlight.js its</span>
+<span class="hljs-comment">// code blocks load, so token classification matches exactly.</span>
 
-        <!-- 正在编辑的那一行，用一层极淡的底色标出来 -->
-        <rect x="176" y="357" width="672" height="32" fill="#ffffff" fill-opacity="0.07"/>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">highlight</span> = (<span class="hljs-params">text, language</span>) =&gt; {
+    <span class="hljs-keyword">const</span> result = hljs.<span class="hljs-title function_">highlight</span>(text, {
+        language,
+        <span class="hljs-attr">ignoreIllegals</span>: <span class="hljs-literal">true</span>,
+    });
+    <span class="hljs-keyword">return</span> result.<span class="hljs-property">value</span>;
+};
 
-        <!-- 其余各行。只表示「这里有代码、它是有颜色的」，不表示任何语法 -->
-        <g>
-            <rect x="220" y="214" width="76" height="14" fill="#ff7b72"/>
-            <rect x="304" y="214" width="190" height="14" fill="#a5d6ff"/>
-            <rect x="502" y="214" width="150" height="14" fill="#8b949e"/>
-
-            <rect x="220" y="252" width="290" height="14" fill="#8b949e"/>
-
-            <rect x="220" y="290" width="60" height="14" fill="#ff7b72"/>
-            <rect x="288" y="290" width="220" height="14" fill="#a5d6ff"/>
-            <rect x="516" y="290" width="130" height="14" fill="#79c0ff"/>
-
-            <rect x="220" y="328" width="130" height="14" fill="#d2a8ff"/>
-            <rect x="358" y="328" width="90" height="14" fill="#7ee787"/>
-            <rect x="456" y="328" width="290" height="14" fill="#a5d6ff"/>
-
-            <rect x="220" y="404" width="230" height="14" fill="#a5d6ff"/>
-            <rect x="458" y="404" width="56" height="14" fill="#ff7b72"/>
-
-            <rect x="220" y="442" width="170" height="14" fill="#7ee787"/>
-            <rect x="398" y="442" width="210" height="14" fill="#8b949e"/>
-
-            <rect x="220" y="480" width="90" height="14" fill="#79c0ff"/>
-            <rect x="318" y="480" width="140" height="14" fill="#8b949e"/>
-            <rect x="466" y="480" width="210" height="14" fill="#d2a8ff"/>
-        </g>
-
-        <!-- 光标：全图唯一的实心白，也是唯一的竖笔画 -->
-        <rect x="220" y="366" width="76" height="14" fill="#ff7b72"/>
-        <rect x="304" y="358" width="7" height="30" fill="#ffffff"/>
-    </svg>
-    <div class="wordmark">Editor</div>
+<span class="hljs-keyword">const</span> tab = <span class="hljs-keyword">await</span> plugin.<span class="hljs-title function_">addTab</span>({
+    <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;editorText&quot;</span>,
+    <span class="hljs-attr">init</span>: <span class="hljs-function">(<span class="hljs-params">custom</span>) =&gt;</span> <span class="hljs-title function_">createView</span>(custom, t),<span class="caret"></span>
+});</pre>
+        </div>
+    </div>
 </div>
 </body>
 </html>

@@ -9,7 +9,8 @@
  * 语法配色仍然复用用户选定的那份 hljs 主题样式表，见 theme.ts。
  *
  * 顶部一条操作条：左侧是可点的语言标签，右侧依次是查找、只读切换与保存。
- * 图标按钮用 .ariaLabel + data-position，与思源自己的图标按钮同一套提示机制。
+ * 图标按钮只留 aria-label 给读屏，不挂思源的 .ariaLabel：那一栏紧贴正文，
+ * 悬浮提示弹出时会压住第一行代码，得不偿失。
  */
 import {showMessage, type Custom} from "siyuan";
 import {openSearchPanel} from "@codemirror/search";
@@ -83,9 +84,9 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     root.innerHTML = `<div class="editor-siyuan__action">
 <span class="editor-siyuan__language"></span>
 <span class="fn__flex-1"></span>
-<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="search"><svg><use xlink:href="#iconSearch"></use></svg></span>
-<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="readonly"><svg><use xlink:href="#iconEye"></use></svg></span>
-<span class="ariaLabel editor-siyuan__icon" data-position="4north" data-type="save"><svg><use xlink:href="#${ICON_SAVE}"></use></svg></span>
+<span class="editor-siyuan__icon" data-type="search"><svg><use xlink:href="#iconSearch"></use></svg></span>
+<span class="editor-siyuan__icon" data-type="readonly"><svg><use xlink:href="#iconEye"></use></svg></span>
+<span class="editor-siyuan__icon" data-type="save"><svg><use xlink:href="#${ICON_SAVE}"></use></svg></span>
 </div>
 <div class="editor-siyuan__body">
 <div class="editor-siyuan__mount"></div>

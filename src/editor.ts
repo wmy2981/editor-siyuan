@@ -11,8 +11,13 @@
  * 异步补算会在停止输入后一次性换掉整篇装饰，用户看到的是颜色"迟一步窜动"。
  * 代价是每敲一键都要整篇重跑 hljs，所以按实测耗时自适应：一次整篇超过
  * SYNC_BUDGET_MS 就退回「先映射旧装饰、停止输入后再补算」。
- * 实测参考（本机，思源自带的那份 hljs）：markdown 50k 字符 3.8 ms、200k 15 ms；
- * javascript 50k 42 ms、338k 277 ms。手写的文本与配置类文件基本都落在同步档里。
+ *
+ * 高亮结果直接取 hljs 返回的 token 树，而不是「序列化成 HTML、再解析回 DOM、再遍历取区间」：
+ * 那一圈多出来的 DOM 解析与遍历占整篇耗时的三到四成。实测参考（本机，思源自带的那份 hljs，
+ * 同一批样本各取中位数）：markdown 42k 字符 10.7 → 6.1 ms、149k 34.6 → 23.8 ms；
+ * javascript 50k 字符 9.9 → 5.9 ms、338k 90.0 → 61.5 ms。同步档里装得下的文件因此大了约五成。
+ * 两条路径产出的区间与类名逐条相同（含 markdown 围栏、xml 内嵌 script 这类子语言）；
+ * hljs 内部仍会把结果拼成一份 HTML 字符串（我们不换它的 emitter），这部分省不掉。
  *
  * 刻意不加 highlightSelectionMatches()：它会把光标所在词的所有其它出现位置
  * 高亮成写死的 #99ff7780（黄绿），既不跟随思源主题，又会在每次按键时随
@@ -70,18 +75,57 @@ interface IHighlight {
 }
 
 /**
- * hljs 的输出是 HTML，把它还原成源码区间。
+ * scope 名转 CSS 类名，与 hljs 内部把 token 树渲染成 HTML 时的做法一致：
+ * `language:x` 转成 `language-x`；带点的多级 scope 展开成 `hljs-title function_`
+ * 这样的复合类名（主题选择器就写在这个复合类名上），后缀下划线的个数表示层级。
+ * 前缀写死 hljs-：我们复用思源那份主题样式表，其中的选择器就是这个前缀。
+ */
+function scopeToClass(scope: string): string {
+    if (scope.startsWith("language:")) {
+        return scope.replace("language:", "language-");
+    }
+    const pieces = scope.split(".");
+    const head = `hljs-${pieces.shift()}`;
+    const tail = pieces.map((piece, index) => `${piece}${"_".repeat(index + 1)}`);
+    return [head, ...tail].join(" ");
+}
+
+/**
+ * 走 hljs 的 token 树取源码区间。
+ *
+ * 树里只有文本与 scope 两种节点，按文本长度累加就是源码偏移；取不到树时返回
+ * undefined，由 buildDecorations 退回解析 HTML。
+ */
+function treeRanges(emitter: IHljsEmitter | undefined): Range<Decoration>[] | undefined {
+    const children = emitter?.rootNode?.children;
+    if (!children) {
+        return undefined;
+    }
+    const ranges: Range<Decoration>[] = [];
+    let offset = 0;
+    const walk = (node: IHljsNode | string): void => {
+        if (typeof node === "string") {
+            offset += node.length;
+            return;
+        }
+        const from = offset;
+        node.children?.forEach(walk);
+        if (node.scope && offset > from) {
+            ranges.push(Decoration.mark({class: scopeToClass(node.scope)}).range(from, offset));
+        }
+    };
+    children.forEach(walk);
+    return ranges;
+}
+
+/**
+ * 退回路径：hljs 的输出是 HTML，把它还原成源码区间。
  *
  * hljs 只做包裹与实体转义，不改动正文字符，所以按文本节点顺序累加长度
  * 得到的就是源码偏移；类名原样保留（`.hljs-title.function_` 这类复合类名
  * 是主题选择器的依据，不能只留前缀）。
  */
-function buildDecorations(text: string, language: string): RangeSet<Decoration> {
-    const hljs = window.hljs;
-    if (!hljs) {
-        return Decoration.none;
-    }
-    const html = hljs.highlight(text, {language: normalizeLanguage(language), ignoreIllegals: true}).value;
+function htmlRanges(html: string): Range<Decoration>[] {
     const container = document.createElement("div");
     container.innerHTML = html;
     const ranges: Range<Decoration>[] = [];
@@ -102,8 +146,17 @@ function buildDecorations(text: string, language: string): RangeSet<Decoration> 
         }
     };
     container.childNodes.forEach(walk);
-    // 交给 RangeSet 自己排序：嵌套 span 会产生相同起点、不同终点的区间
-    return Decoration.set(ranges, true);
+    return ranges;
+}
+
+function buildDecorations(text: string, language: string): RangeSet<Decoration> {
+    const hljs = window.hljs;
+    if (!hljs) {
+        return Decoration.none;
+    }
+    const result = hljs.highlight(text, {language: normalizeLanguage(language), ignoreIllegals: true});
+    // 交给 RangeSet 自己排序：嵌套 scope 会产生相同起点、不同终点的区间
+    return Decoration.set(treeRanges(result._emitter) ?? htmlRanges(result.value), true);
 }
 
 function computeHighlight(text: string, language: string): IHighlight {

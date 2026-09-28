@@ -64,7 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
     maxSizeMB: 2,
     confirmOnClose: true,
     stashUnsaved: true,
-    lineNumbers: "auto",
+    lineNumbers: "show",
     restoreCursor: true,
 };
 

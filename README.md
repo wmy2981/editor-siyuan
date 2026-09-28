@@ -47,7 +47,7 @@ The save shortcut is registered as a plugin command. Change it under **Settings 
 | Size limit (MB) | 2 | Larger files are not opened here |
 | Confirm before closing | on | Ask before closing a tab with unsaved changes |
 | Stash unsaved changes | on | Keep unsaved content when a tab closes and offer to restore it next time |
-| Line numbers | Follow SiYuan | Whether the gutter shows line numbers |
+| Line numbers | Always show | Whether the gutter shows line numbers |
 | Restore position | on | Return to the previous scroll position and cursor |
 | Remembered state | — | How many per-file choices are remembered, and a button to clear them |
 

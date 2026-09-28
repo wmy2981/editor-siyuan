@@ -114,7 +114,17 @@ export function openEditorMenu(deps: IMenuDeps, x: number, y: number): void {
     });
 
     menu.addSeparator();
-    menu.addItem({id: "find", icon: "iconSearch", label: t("find"), accelerator: "⌘F", click: () => openSearchPanel(view)});
+    // 必须写成块体：@codemirror/search 的 openSearchPanel 返回 true，
+    // 而宿主菜单把 click 的真值返回当成「保持打开」，箭头函数直接返回它菜单就不收。
+    menu.addItem({
+        id: "find",
+        icon: "iconSearch",
+        label: t("find"),
+        accelerator: "⌘F",
+        click: () => {
+            openSearchPanel(view);
+        },
+    });
 
     menu.addSeparator();
     menu.addItem({id: "save", icon: ICON_SAVE, label: t("save"), accelerator: "⌘S", disabled: readOnly, click: () => deps.onSave()});

@@ -1,5 +1,7 @@
 # Editor
 
+English | [简体中文](./README.zh-CN.md)
+
 Open and edit the text files a note links to, in a SiYuan tab of their own. The editor uses your SiYuan code font and your chosen syntax colours.
 
 

@@ -306,24 +306,40 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     return tab;
 }
 
-/** 上次关闭时来不及保存的内容还在，问用户是恢复还是丢弃。 */
+/**
+ * 上次关闭时来不及保存的内容还在，问用户怎么处理。
+ *
+ * 三个按钮语义不同，所以不允许 Esc、点击空白这类「跳过」：忽略与丢弃都会载入磁盘内容，
+ * 区别只在暂存留不留；恢复只是把暂存载回编辑器，是否保存仍由用户决定。
+ */
 function askRestore(link: string, stashedText: string, fileText: string, t: T): Promise<string> {
     return new Promise((resolve) => {
         openConfirmDialog({
             title: t("restoreTitle"),
             text: t("restoreBody"),
-            cancelLabel: t("restoreDiscard"),
-            onCancel: () => {
-                // 丢弃要落到存储上：只把正文换回磁盘内容的话暂存还在，
-                // 下次打开同一文件会再问一遍。用 X 或 Escape 关闭也算丢弃。
-                dropStash(link);
-                resolve(fileText);
-            },
-            actions: [{
-                label: t("restoreAccept"),
-                primary: true,
-                onClick: () => resolve(stashedText),
-            }],
+            dismissable: false,
+            // 兜底：万一被别的路径关掉（比如批量隐藏面板），按「忽略」处理，
+            // 既不会把暂存丢掉，也不会把用户的选择替作已经做过
+            onCancel: () => resolve(fileText),
+            actions: [
+                {
+                    label: t("restoreIgnore"),
+                    onClick: () => resolve(fileText),
+                },
+                {
+                    label: t("restoreDiscard"),
+                    danger: true,
+                    onClick: () => {
+                        dropStash(link);
+                        resolve(fileText);
+                    },
+                },
+                {
+                    label: t("restoreAccept"),
+                    primary: true,
+                    onClick: () => resolve(stashedText),
+                },
+            ],
         });
     });
 }

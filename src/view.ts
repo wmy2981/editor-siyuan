@@ -101,7 +101,8 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
     let ref: IAssetRef | undefined;
     let editor: EditorView | undefined;
     let dirty = false;
-    let readOnly = false;
+    // 初始模式取自设置；之后由操作条上的按钮在这个页签内切换，不回写设置
+    let readOnly = settings().openMode === "preview";
     let language = PLAIN_TEXT;
     let eol: "\n" | "\r\n" = "\n";
     let bom = false;

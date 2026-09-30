@@ -9,7 +9,7 @@
  * 面板里改的是一份草稿，点「保存」才落盘——这也正是 Setting 的 confirmCallback 语义。
  */
 import {Setting} from "siyuan";
-import {DEFAULT_EXTENSIONS, type Settings, type TLineNumbers, type TTakeover} from "./config";
+import {DEFAULT_EXTENSIONS, type Settings, type TLineNumbers, type TOpenMode, type TTakeover} from "./config";
 import {rememberedCount} from "./config";
 import type {T} from "./i18n";
 
@@ -137,6 +137,17 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
         description: t("stashUnsavedTip"),
         actionElement: switchControl(draft.stashUnsaved, (checked) => {
             draft.stashUnsaved = checked;
+        }),
+    });
+
+    setting.addItem({
+        title: t("openMode"),
+        description: t("openModeTip"),
+        actionElement: selectControl(draft.openMode, [
+            {value: "edit", label: t("openModeEdit")},
+            {value: "preview", label: t("openModePreview")},
+        ], (value) => {
+            draft.openMode = value as TOpenMode;
         }),
     });
 

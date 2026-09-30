@@ -23,6 +23,9 @@ export type TTakeover = "click" | "ctrlClick" | "altClick" | "shiftClick" | "non
 /** auto 跟随思源的 `editor.codeSyntaxHighlightLineNum`。 */
 export type TLineNumbers = "auto" | "show" | "hide";
 
+/** 页签打开时的模式；preview 即操作条上的只读态。 */
+export type TOpenMode = "edit" | "preview";
+
 export interface Settings {
     /** 接管手势；none 表示点击一律交回思源，只能从右键菜单打开。 */
     takeover: TTakeover;
@@ -35,6 +38,8 @@ export interface Settings {
     /** beforeDestroy 时把未保存正文暂存下来，下次打开同一文件时提示恢复。 */
     stashUnsaved: boolean;
     lineNumbers: TLineNumbers;
+    /** 打开页签时先进入编辑还是只读预览。 */
+    openMode: TOpenMode;
     /** 重新打开时恢复上次的滚动位置与光标。 */
     restoreCursor: boolean;
 }
@@ -65,11 +70,13 @@ export const DEFAULT_SETTINGS: Settings = {
     confirmOnClose: true,
     stashUnsaved: true,
     lineNumbers: "show",
+    openMode: "edit",
     restoreCursor: true,
 };
 
 const TAKEOVERS: TTakeover[] = ["click", "ctrlClick", "altClick", "shiftClick", "none"];
 const LINE_NUMBERS: TLineNumbers[] = ["auto", "show", "hide"];
+const OPEN_MODES: TOpenMode[] = ["edit", "preview"];
 
 const pick = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
     allowed.find((item) => item === value) ?? fallback;
@@ -85,6 +92,7 @@ export function normalizeSettings(raw: unknown): Settings {
         confirmOnClose: source.confirmOnClose !== false,
         stashUnsaved: source.stashUnsaved !== false,
         lineNumbers: pick(source.lineNumbers, LINE_NUMBERS, DEFAULT_SETTINGS.lineNumbers),
+        openMode: pick(source.openMode, OPEN_MODES, DEFAULT_SETTINGS.openMode),
         restoreCursor: source.restoreCursor !== false,
     };
 }

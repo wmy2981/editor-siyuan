@@ -137,6 +137,13 @@
 .editor-siyuan .cm-editor .cm-content {
   padding: 0;
   caret-color: var(--b3-theme-on-background);
+  // 预览（只读）模式下 CodeMirror 会把 .cm-content 的 contenteditable 置为 false，
+  // 而 Chromium 对非可编辑元素按「继承祖先的 user-select」处理，思源的
+  // .layout-tab-container 恰好是 user-select: none —— 于是整段正文既选不中（鼠标是
+  // 默认箭头），复制命令拿到的也是空串，连之前的剪贴板内容都会被清掉。
+  // 编辑模式不受影响（编辑宿主即使继承到 none，浏览器也允许选中），所以这条规则
+  // 实际只在只读模式下起作用；思源自己的只读预览面板 .protyle-preview 也是这么写的。
+  user-select: text;
 }
 
 .editor-siyuan .cm-editor .cm-line {

@@ -262,7 +262,7 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
         language = rememberedLanguage(ref.link) ?? guessLanguage(ref.link);
         const stashed = settings().stashUnsaved ? stashedEntry(ref.link) : undefined;
         const doc = stashed && stashed.text !== data.text
-            ? await askRestore(stashed.text, data.text, t)
+            ? await askRestore(ref.link, stashed.text, data.text, t)
             : data.text;
         if (disposed) {
             return;
@@ -307,13 +307,18 @@ export function createView(custom: Custom, t: T, settings: () => Settings): IEdi
 }
 
 /** 上次关闭时来不及保存的内容还在，问用户是恢复还是丢弃。 */
-function askRestore(stashedText: string, fileText: string, t: T): Promise<string> {
+function askRestore(link: string, stashedText: string, fileText: string, t: T): Promise<string> {
     return new Promise((resolve) => {
         openConfirmDialog({
             title: t("restoreTitle"),
             text: t("restoreBody"),
             cancelLabel: t("restoreDiscard"),
-            onCancel: () => resolve(fileText),
+            onCancel: () => {
+                // 丢弃要落到存储上：只把正文换回磁盘内容的话暂存还在，
+                // 下次打开同一文件会再问一遍。用 X 或 Escape 关闭也算丢弃。
+                dropStash(link);
+                resolve(fileText);
+            },
             actions: [{
                 label: t("restoreAccept"),
                 primary: true,

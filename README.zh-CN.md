@@ -64,6 +64,10 @@ TypeScript、JSX、SCSS、LESS、HTML、YAML、Markdown 没有可靠的浏览器
 - **移动端没有页签，也没有修饰键。** 编辑器挂在铺满屏幕的弹窗里，关闭只能点操作条最左边的 ×，返回键与系统手势由暂存兜底；接管一律按单击处理。
 - **浮层没有关闭按钮，独立窗口也只能用浮层。** 浮层的外壳是思源原生对话框，只去掉了右上角的 ×，关闭靠 `Esc` 或点浮层外的空白（有未保存改动先确认）；思源弹出的独立窗口没有页签栏，一律用浮层，与「桌面端形态」的设置无关。
 
+## 集市趋势图表
+
+![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/editor-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
+
 ## 开发
 
 ```

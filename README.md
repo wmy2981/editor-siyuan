@@ -64,6 +64,10 @@ These are consequences of the plugin API, not oversights.
 - **Mobile has no tabs and no modifier keys.** The editor is mounted in a full-screen dialog and only the × at the left end of the action bar closes it; the back key and system gestures fall back to the stash; takeover always treats a plain tap as the gesture.
 - **The floating window has no close button, and a popped-out SiYuan window can only use it.** The shell is SiYuan's native dialog with only the close icon removed, so close it with `Esc` or by clicking outside it (unsaved changes are confirmed first); a window popped out of SiYuan has no tab strip, so it always uses the floating window whatever the **Desktop form** setting says.
 
+## Bazaar Stats Graph
+
+![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/editor-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
+
 ## Development
 
 ```

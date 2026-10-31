@@ -28,6 +28,7 @@ interface IOptions {
     lineWrap?: boolean;
     ligatures?: boolean;
     autocomplete?: boolean;
+    drawSelection?: boolean;
     tabSpaces?: number;
     onContextMenu?: (event: MouseEvent) => void;
     onChange?: () => void;
@@ -45,6 +46,7 @@ function make(options: IOptions = {}): {view: EditorView; parent: HTMLElement; o
         lineWrap: options.lineWrap ?? false,
         ligatures: options.ligatures ?? false,
         autocomplete: options.autocomplete ?? false,
+        drawSelection: options.drawSelection ?? true,
         tabSpaces: options.tabSpaces ?? 4,
         t,
         onContextMenu: options.onContextMenu,
@@ -204,11 +206,12 @@ describe("编辑器开关", () => {
         const {view} = make();
         expect(view.contentDOM.getAttribute("inputmode")).toBeNull();
         setEditorReadOnly(view, true);
-        expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBe("manual");
         expect(view.contentDOM.getAttribute("inputmode")).toBe("none");
-        setEditorReadOnly(view, false);
+        // 不能顺手写 virtualkeyboardpolicy=manual：Android WebView 会连原生光标与选区一起收掉
         expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBeNull();
+        setEditorReadOnly(view, false);
         expect(view.contentDOM.getAttribute("inputmode")).toBeNull();
+        expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBeNull();
     });
 
     it("以只读建立时同样带上压住键盘的属性", () => {
@@ -216,6 +219,18 @@ describe("编辑器开关", () => {
         const {view} = make({readOnly: true});
         expect(view.state.readOnly).toBe(true);
         expect(view.contentDOM.getAttribute("inputmode")).toBe("none");
+        expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBeNull();
+    });
+
+    it("自绘选区可以关掉，触屏改用浏览器的原生选区", () => {
+        installHljs();
+        const drawn = make({drawSelection: true}).view;
+        expect(drawn.dom.querySelector(".cm-selectionLayer")).not.toBeNull();
+        expect(drawn.dom.querySelector(".cm-cursorLayer")).not.toBeNull();
+
+        const native = make({drawSelection: false}).view;
+        expect(native.dom.querySelector(".cm-selectionLayer")).toBeNull();
+        expect(native.dom.querySelector(".cm-cursorLayer")).toBeNull();
     });
 
     it("行号开关切换 gutter", () => {

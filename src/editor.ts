@@ -246,6 +246,14 @@ export interface IEditorOptions {
     ligatures: boolean;
     /** 是否提供代码提示；只读时一律不注册，见 createEditor。 */
     autocomplete: boolean;
+    /**
+     * 是否用 CodeMirror 自绘选区（drawSelection）。
+     *
+     * 触屏前端必须传 false：drawSelection 会把原生光标与原生选区一并藏掉，
+     * 而 CodeMirror 不接管触屏选区（mousedown 里明确忽略触摸），于是移动端
+     * 既没有插入符也选不中，系统的手柄与文本菜单也无从出现。
+     */
+    drawSelection: boolean;
     /** 思源 editor.codeTabSpaces；0 表示用制表符。 */
     tabSpaces: number;
     /** 搜索面板的文案。 */
@@ -267,12 +275,13 @@ function readOnlyExtensions(readOnly: boolean): Extension {
     return [
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(true),
-        // 只读时正文要能落光标、拖动要能出选区手柄，但不该顶起软键盘：
-        // virtualkeyboardpolicy 只有 Android Chromium 认，inputmode=none 兜住 iOS。
-        // 桌面端没有软键盘，这两条属性在那里不起作用。
-        readOnly
-            ? EditorView.contentAttributes.of({virtualkeyboardpolicy: "manual", inputmode: "none"})
-            : [],
+        // 只读时不该顶起软键盘。用 inputmode=none：它只是给输入法的键盘类型提示，
+        // 编辑会话照常建立，原生光标、选区与系统手柄都还在。
+        //
+        // 不要换成 virtualkeyboardpolicy=manual。那条策略落在宿主的输入连接上，Android
+        // WebView 里它会连原生光标与选区一起收掉：预览模式点正文既没有插入符也选不中，
+        // 而同一台设备的编辑模式一切正常——两者的 DOM 只差这一个属性（issue #24 的回归）。
+        readOnly ? EditorView.contentAttributes.of({inputmode: "none"}) : [],
     ];
 }
 
@@ -285,7 +294,8 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
             extensions: [
                 history(),
                 highlightSpecialChars(),
-                drawSelection(),
+                // 触屏用浏览器自己的光标、选区与手柄，见 IEditorOptions.drawSelection
+                options.drawSelection ? drawSelection() : [],
                 siyuanSearch(options.t),
                 indentOnInput(),
                 indentUnit.of(indent),

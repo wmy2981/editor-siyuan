@@ -243,6 +243,7 @@ describe("加载文件", () => {
             lineWrap: true,
             ligatures: true,
             autocomplete: true,
+            drawSelection: true,
             tabSpaces: 2,
         });
         expect(lastOptions.onContextMenu).toBeTypeOf("function");
@@ -337,6 +338,8 @@ describe("加载文件", () => {
         __setFrontend("mobile");
         await openReady(host({link: REF.link}, {title: "a.txt", onClose: vi.fn()}));
         expect(lastOptions.onContextMenu).toBeUndefined();
+        // 触屏必须用浏览器的原生光标与选区：CodeMirror 的自绘会把它们一起藏掉
+        expect(lastOptions.drawSelection).toBe(false);
     });
 
     it("桌面端浮层仍然用自己的右键菜单，并聚焦正文", async () => {

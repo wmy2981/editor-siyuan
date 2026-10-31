@@ -169,6 +169,10 @@
   // 正文要能选中：思源的 .layout-tab-container 是 user-select: none，而各 WebView
   // 对 contenteditable 元素是否忽略继承来的 none 处理并不一致。思源自己的只读预览
   // 面板 .protyle-preview 也显式写了这一条。
+  //
+  // 前缀那条不能省：iOS 的 WebKit 按 -webkit-user-select 处理继承，只写不带前缀的
+  // 属性时，祖先的 -webkit-user-select: none 仍然生效，正文就既没有光标也选不中。
+  -webkit-user-select: text;
   user-select: text;
 }
 

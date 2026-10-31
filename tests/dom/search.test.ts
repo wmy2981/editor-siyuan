@@ -105,6 +105,7 @@ describe("面板开关", () => {
             lineWrap: false,
             ligatures: false,
             autocomplete: false,
+            drawSelection: true,
             tabSpaces: 4,
             t,
             onChange: () => undefined,

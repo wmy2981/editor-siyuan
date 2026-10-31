@@ -484,6 +484,9 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             ligatures: ligaturesWanted(),
             tabSpaces: config().editor.codeTabSpaces,
             autocomplete: settings().autocomplete,
+            // 触屏交给浏览器的原生光标与选区：CodeMirror 不处理触屏选区，
+            // 自绘会把原生光标和选区一起藏掉（见 IEditorOptions.drawSelection）
+            drawSelection: !touch,
             t,
             // 移动端不拦 contextmenu：长按该交给系统那套文本菜单（剪切 / 复制 / 粘贴 / 全选），
             // 自制菜单在触屏上既和它重复，还会抢掉系统的选择手势。桌面端照旧用自己的右键菜单。

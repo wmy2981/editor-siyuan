@@ -195,6 +195,25 @@ describe("编辑器开关", () => {
         expect(view.state.facet(EditorView.editable)).toBe(true);
     });
 
+    it("只读时压住软键盘，切回编辑后放开", () => {
+        installHljs();
+        const {view} = make();
+        expect(view.contentDOM.getAttribute("inputmode")).toBeNull();
+        setEditorReadOnly(view, true);
+        expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBe("manual");
+        expect(view.contentDOM.getAttribute("inputmode")).toBe("none");
+        setEditorReadOnly(view, false);
+        expect(view.contentDOM.getAttribute("virtualkeyboardpolicy")).toBeNull();
+        expect(view.contentDOM.getAttribute("inputmode")).toBeNull();
+    });
+
+    it("以只读建立时同样带上压住键盘的属性", () => {
+        installHljs();
+        const {view} = make({readOnly: true});
+        expect(view.state.readOnly).toBe(true);
+        expect(view.contentDOM.getAttribute("inputmode")).toBe("none");
+    });
+
     it("行号开关切换 gutter", () => {
         installHljs();
         const {view} = make();

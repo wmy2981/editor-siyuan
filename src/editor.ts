@@ -256,7 +256,16 @@ export interface IEditorOptions {
  * 也因此没有插入符与选区手柄（issue #23 / #24）。readOnly 本身已经拦住输入、粘贴与拖放。
  */
 function readOnlyExtensions(readOnly: boolean): Extension {
-    return [EditorState.readOnly.of(readOnly), EditorView.editable.of(true)];
+    return [
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(true),
+        // 只读时正文要能落光标、拖动要能出选区手柄，但不该顶起软键盘：
+        // virtualkeyboardpolicy 只有 Android Chromium 认，inputmode=none 兜住 iOS。
+        // 桌面端没有软键盘，这两条属性在那里不起作用。
+        readOnly
+            ? EditorView.contentAttributes.of({virtualkeyboardpolicy: "manual", inputmode: "none"})
+            : [],
+    ];
 }
 
 export function createEditor(parent: HTMLElement, options: IEditorOptions): EditorView {

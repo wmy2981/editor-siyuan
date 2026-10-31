@@ -33,7 +33,7 @@ import {
     SearchQuery,
     setSearchQuery,
 } from "@codemirror/search";
-import type {Extension} from "@codemirror/state";
+import type {EditorState, Extension} from "@codemirror/state";
 import type {EditorView, Panel, ViewUpdate} from "@codemirror/view";
 import {escapeHtml} from "./util";
 import type {T} from "./i18n";
@@ -65,6 +65,60 @@ export const closeSearch = (view: EditorView): boolean => {
 /** ⌘F / Ctrl+F。CodeMirror 的键名 Mod-f 在 mac 上就是 ⌘F。 */
 const isSearchKey = (event: KeyboardEvent): boolean =>
     (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "f";
+
+/**
+ * 替换当前命中并前进到下一处。
+ *
+ * 不能把 replaceNext 直接接到按钮上：它只替换「选区正好压着的那条命中」，而面板打开时
+ * 焦点在输入框里，编辑器选区还停在用户上次点过的位置，与眼前的命中无关 —— 第一次点击
+ * 只会跳到某条命中并选中，第二次才替换；它又从那个旧选区往后算下一条，每点一次都把
+ * 视图拽到别处（issue #26）。
+ *
+ * 这里先算出目标命中并选中，再交给 replaceNext 完成替换与前进：替换文本要处理正则捕获组
+ * 与 \n 这类转义，只有 SearchQuery 内部算得对，公开 API 拿不到，自己拼一遍等于重写一套
+ * 替换语义。两次 dispatch 同步发生，用户看到的仍是一次操作。
+ */
+const replaceCurrent = (view: EditorView): boolean => {
+    const state = view.state;
+    if (state.readOnly) {
+        return false;
+    }
+    const query = getSearchQuery(state);
+    if (!query.valid) {
+        return false;
+    }
+    const target = targetMatch(view, query);
+    if (!target) {
+        return false;
+    }
+    const {from, to} = state.selection.main;
+    if (from !== target.from || to !== target.to) {
+        view.dispatch({selection: {anchor: target.from, head: target.to}});
+    }
+    return replaceNext(view);
+};
+
+/**
+ * 目标命中：选区正好压着一条命中时就用它（用户按过「下一个」或点选过）；否则从视口起点
+ * 往后找第一条，找不到再从头找。从视口起点算而不是从旧光标算：用户眼前看到的是视口里的
+ * 命中，旧光标可能早就滚出视野了。
+ */
+function targetMatch(view: EditorView, query: SearchQuery): {from: number; to: number} | undefined {
+    const state = view.state;
+    const {from, to} = state.selection.main;
+    if (from !== to) {
+        const cursor = query.getCursor(state, from, to).next();
+        if (!cursor.done && cursor.value.from === from && cursor.value.to === to) {
+            return cursor.value;
+        }
+    }
+    return firstMatch(query, state, view.viewport.from) ?? firstMatch(query, state, 0);
+}
+
+function firstMatch(query: SearchQuery, state: EditorState, from: number): {from: number; to: number} | undefined {
+    const cursor = query.getCursor(state, from, state.doc.length).next();
+    return cursor.done ? undefined : cursor.value;
+}
 
 /** 三个开关，顺序即界面上的顺序。 */
 const FLAGS = ["caseSensitive", "wholeWord", "regexp"] as const;
@@ -150,7 +204,7 @@ ${iconButton("close", "iconClose", t("searchClose"))}
             }
             event.preventDefault();
             if (event.target === this.replaceField) {
-                replaceNext(this.view);
+                replaceCurrent(this.view);
             } else {
                 (event.shiftKey ? findPrevious : findNext)(this.view);
             }
@@ -164,7 +218,7 @@ ${iconButton("close", "iconClose", t("searchClose"))}
         this.bind("prev", () => findPrevious(this.view));
         this.bind("next", () => findNext(this.view));
         this.bind("close", () => closeSearchPanel(this.view));
-        this.bind("replace", () => replaceNext(this.view));
+        this.bind("replace", () => replaceCurrent(this.view));
         this.bind("replaceAll", () => replaceAll(this.view));
 
         this.syncFlags();

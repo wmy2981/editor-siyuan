@@ -27,12 +27,15 @@ const t = makeT({
 
 const views: EditorView[] = [];
 
-function makeEditor(doc = "foo foo"): EditorView {
+function makeEditor(doc = "foo foo", readOnly = false): EditorView {
     const parent = document.createElement("div");
     document.body.append(parent);
     const view = new EditorView({
         parent,
-        state: EditorState.create({doc, extensions: [siyuanSearch(t)]}),
+        state: EditorState.create({
+            doc,
+            extensions: [siyuanSearch(t), EditorState.readOnly.of(readOnly)],
+        }),
     });
     views.push(view);
     return view;
@@ -387,6 +390,53 @@ describe("按钮", () => {
         }));
         panel(view)!.querySelector<HTMLElement>('button[data-type="replace"]')!.click();
         expect(view.state.doc.toString()).toBe("bar");
+    });
+
+    it("选区不在命中上时，点一次替换就替换视口里的第一条", () => {
+        const view = makeEditor("foo x foo");
+        openSearchPanel(view);
+        type(searchField(view), "foo");
+        type(replaceField(view), "bar");
+        // 光标停在末尾，不在任何命中上；旧实现会先「选中一条」再要求点第二次
+        view.dispatch({selection: {anchor: 9}});
+        panel(view)!.querySelector<HTMLElement>('button[data-type="replace"]')!.click();
+        expect(view.state.doc.toString()).toBe("bar x foo");
+        // 替换后选区落到下一条命中，下一次点击接着替换它
+        expect(view.state.selection.main.from).toBe(6);
+        expect(view.state.selection.main.to).toBe(9);
+    });
+
+    it("连续点击替换依次替换每一处", () => {
+        const view = makeEditor("foo foo");
+        openSearchPanel(view);
+        type(searchField(view), "foo");
+        type(replaceField(view), "bar");
+        view.dispatch({selection: {anchor: 7}});
+        const replace = panel(view)!.querySelector<HTMLElement>('button[data-type="replace"]')!;
+        replace.click();
+        expect(view.state.doc.toString()).toBe("bar foo");
+        replace.click();
+        expect(view.state.doc.toString()).toBe("bar bar");
+    });
+
+    it("选区正好压着某条命中时替换那一条", () => {
+        const view = makeEditor("foo foo");
+        openSearchPanel(view);
+        type(searchField(view), "foo");
+        type(replaceField(view), "bar");
+        view.dispatch({selection: {anchor: 4, head: 7}});
+        panel(view)!.querySelector<HTMLElement>('button[data-type="replace"]')!.click();
+        expect(view.state.doc.toString()).toBe("foo bar");
+    });
+
+    it("只读时替换不动文档", () => {
+        const view = makeEditor("foo foo", true);
+        openSearchPanel(view);
+        type(searchField(view), "foo");
+        type(replaceField(view), "bar");
+        view.dispatch({selection: {anchor: 0, head: 3}});
+        panel(view)!.querySelector<HTMLElement>('button[data-type="replace"]')!.click();
+        expect(view.state.doc.toString()).toBe("foo foo");
     });
 
     it("点替换输入框本身不会替换", () => {

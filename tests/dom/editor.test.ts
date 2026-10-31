@@ -181,12 +181,15 @@ describe("createEditor", () => {
 });
 
 describe("编辑器开关", () => {
-    it("只读开关同时切换 readOnly 与 editable", () => {
+    it("只读开关只切 readOnly，正文仍保留 contenteditable", () => {
         installHljs();
         const {view} = make();
         setEditorReadOnly(view, true);
         expect(view.state.readOnly).toBe(true);
-        expect(view.state.facet(EditorView.editable)).toBe(false);
+        // editable 不能跟着关：关掉它 .cm-content 就没有 contenteditable，
+        // 焦点、⌘A 与移动端的光标会一起失效（issue #23 / #24）
+        expect(view.state.facet(EditorView.editable)).toBe(true);
+        expect(view.contentDOM.getAttribute("contenteditable")).toBe("true");
         setEditorReadOnly(view, false);
         expect(view.state.readOnly).toBe(false);
         expect(view.state.facet(EditorView.editable)).toBe(true);

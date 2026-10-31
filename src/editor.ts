@@ -247,8 +247,16 @@ export interface IEditorOptions {
     onChange: () => void;
 }
 
+/**
+ * 只读语义只由 EditorState.readOnly 表达，EditorView.editable 永远保持开启。
+ *
+ * 关掉 editable 会让 .cm-content 失去 contenteditable，连焦点也一起没有：CodeMirror 的
+ * keymap 挂在 contentDOM 上，元素不聚焦就收不到按键，Mod-a 的 selectAll 永远不执行，
+ * Ctrl+A 落到浏览器默认的页面级全选，选区越过编辑器边界圈进宿主页面的文字；移动端
+ * 也因此没有插入符与选区手柄（issue #23 / #24）。readOnly 本身已经拦住输入、粘贴与拖放。
+ */
 function readOnlyExtensions(readOnly: boolean): Extension {
-    return [EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)];
+    return [EditorState.readOnly.of(readOnly), EditorView.editable.of(true)];
 }
 
 export function createEditor(parent: HTMLElement, options: IEditorOptions): EditorView {

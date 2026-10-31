@@ -637,6 +637,27 @@ describe("销毁", () => {
     });
 });
 
+describe("字号", () => {
+    it("自定义字号写成根元素上的 CSS 变量", async () => {
+        settings = makeSettings({fontSize: 18});
+        const tab = await openReady();
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-font-size")).toBe("18px");
+    });
+
+    it("跟随思源时不写这个变量", async () => {
+        const tab = await openReady();
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-font-size")).toBe("");
+    });
+
+    it("设置改动后对已打开的页签立即生效", async () => {
+        const tab = await openReady();
+        refreshEditorSettings(makeSettings({fontSize: 20}));
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-font-size")).toBe("20px");
+        refreshEditorSettings(makeSettings({fontSize: 0}));
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-font-size")).toBe("");
+    });
+});
+
 describe("设置联动", () => {
     it("refreshEditorSettings 按设置与思源配置重算三项", async () => {
         const first = await openReady();

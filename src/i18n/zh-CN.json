@@ -67,6 +67,8 @@
   "lineWrapTip": "超出编辑器宽度的内容是否自动换行",
   "ligatures": "连字",
   "ligaturesTip": "代码字体的连字是否生效，例如 => 与 !=",
+  "fontSize": "字号",
+  "fontSizeTip": "编辑器正文的字号，单位 px。留空跟随思源设置，与代码块同字号",
   "restoreCursor": "恢复位置",
   "restoreCursorTip": "重新打开同一文件时回到上次的滚动位置与光标",
   "debugMode": "调试模式",

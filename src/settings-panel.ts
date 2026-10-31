@@ -11,6 +11,7 @@
 import {Setting} from "siyuan";
 import {
     DEFAULT_EXTENSIONS,
+    MAX_FONT_SIZE,
     type Settings,
     type TDesktopForm,
     type TFollow,
@@ -235,6 +236,33 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
         ], (value) => {
             draft.ligatures = value as TFollow;
         }),
+    });
+
+    setting.addItem({
+        title: t("fontSize"),
+        description: t("fontSizeTip"),
+        // 与大小上限同样包一层 div：宿主只给裸 INPUT 挂 bindInput，那会 focus 并在移动端弹键盘
+        createActionElement: () => {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.className = "b3-text-field";
+            input.min = "1";
+            input.max = String(MAX_FONT_SIZE);
+            input.step = "1";
+            input.placeholder = t("followSiYuan");
+            input.value = draft.fontSize > 0 ? String(draft.fontSize) : "";
+            input.addEventListener("input", () => {
+                const value = Number(input.value);
+                // 留空即跟随思源；超出范围的按上下限收拢，与 normalizeSettings 一致
+                draft.fontSize = Number.isFinite(value) && value > 0
+                    ? Math.min(MAX_FONT_SIZE, Math.round(value))
+                    : 0;
+            });
+            const wrapper = document.createElement("div");
+            wrapper.className = "editor-siyuan-settings__number";
+            wrapper.append(input);
+            return wrapper;
+        },
     });
 
     setting.addItem({

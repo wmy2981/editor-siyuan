@@ -151,7 +151,8 @@
   font-family: var(--b3-font-family-editor-code, var(--b3-font-family-code));
   // 字号取同样内容的代码块字号：思源代码块的 .hljs 是编辑器字号的 85%，
   // 直接写 --b3-font-size-editor 会比旁边的代码块大一圈。思源没有单独的代码字号变量。
-  font-size: calc(var(--b3-font-size-editor) * .85);
+  // 设置里填了自定义字号时，view.ts 会在根元素上写 --editor-siyuan-font-size 覆盖它。
+  font-size: var(--editor-siyuan-font-size, calc(var(--b3-font-size-editor) * .85));
   font-weight: var(--b3-font-weight-editor-code, 400);
   line-height: 1.625;
   color: inherit;

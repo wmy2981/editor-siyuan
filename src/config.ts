@@ -48,6 +48,8 @@ export interface Settings {
     lineWrap: TFollow;
     /** 代码字体的连字是否生效；auto 跟随思源的 `editor.codeLigatures`。 */
     ligatures: TFollow;
+    /** 正文的字号，单位 px；0 表示跟随思源（与代码块同字号）。 */
+    fontSize: number;
     /** 打开页签时先进入编辑还是只读预览。 */
     openMode: TOpenMode;
     /**
@@ -93,6 +95,7 @@ export const DEFAULT_SETTINGS: Settings = {
     lineNumbers: "show",
     lineWrap: "auto",
     ligatures: "auto",
+    fontSize: 0,
     openMode: "edit",
     desktopForm: "tab",
     restoreCursor: true,
@@ -107,6 +110,9 @@ const FOLLOWS: TFollow[] = ["auto", "on", "off"];
 const OPEN_MODES: TOpenMode[] = ["edit", "preview"];
 const DESKTOP_FORMS: TDesktopForm[] = ["tab", "dialog"];
 
+/** 自定义字号的上限，单位 px。 */
+export const MAX_FONT_SIZE = 72;
+
 const pick = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
     allowed.find((item) => item === value) ?? fallback;
 
@@ -114,6 +120,7 @@ const pick = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
 export function normalizeSettings(raw: unknown): Settings {
     const source = (raw ?? {}) as Partial<Record<keyof Settings, unknown>>;
     const maxSizeMB = Number(source.maxSizeMB);
+    const fontSize = Number(source.fontSize);
     return {
         takeover: pick(source.takeover, TAKEOVERS, DEFAULT_SETTINGS.takeover),
         extensions: typeof source.extensions === "string" ? source.extensions : DEFAULT_SETTINGS.extensions,
@@ -123,6 +130,8 @@ export function normalizeSettings(raw: unknown): Settings {
         lineNumbers: pick(source.lineNumbers, LINE_NUMBERS, DEFAULT_SETTINGS.lineNumbers),
         lineWrap: pick(source.lineWrap, FOLLOWS, DEFAULT_SETTINGS.lineWrap),
         ligatures: pick(source.ligatures, FOLLOWS, DEFAULT_SETTINGS.ligatures),
+        // 0 表示跟随思源；其余按 1–72 px 收拢，免得手改的 json 把版式撑坏
+        fontSize: Number.isFinite(fontSize) && fontSize > 0 ? Math.min(MAX_FONT_SIZE, Math.round(fontSize)) : 0,
         openMode: pick(source.openMode, OPEN_MODES, DEFAULT_SETTINGS.openMode),
         desktopForm: pick(source.desktopForm, DESKTOP_FORMS, DEFAULT_SETTINGS.desktopForm),
         restoreCursor: source.restoreCursor !== false,

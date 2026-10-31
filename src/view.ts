@@ -67,6 +67,8 @@ export interface IEditorTab {
     setLineWrap(wrap: boolean): void;
     /** 设置里改过连字偏好后，对已打开的页签立即生效。 */
     setLigatures(ligatures: boolean): void;
+    /** 设置里改过字号偏好后，对已打开的页签立即生效。 */
+    setFontSize(size: number): void;
     /** 页签销毁：记光标、暂存未保存内容、释放编辑器。 */
     dispose(): void;
     focus(): void;
@@ -122,6 +124,18 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
 
     const root = document.createElement("div");
     root.className = "editor-siyuan";
+    /**
+     * 字号写在根元素的自定义属性上，由样式表里 .cm-scroller 的 font-size 取用。
+     * 0 表示跟随思源：去掉属性后回落到与代码块同字号的那条 calc。
+     */
+    const applyFontSize = (size: number): void => {
+        if (size > 0) {
+            root.style.setProperty("--editor-siyuan-font-size", `${size}px`);
+        } else {
+            root.style.removeProperty("--editor-siyuan-font-size");
+        }
+    };
+    applyFontSize(settings().fontSize);
     // data-menu="true" 是思源给「点开菜单的元素」打的标记，两个菜单触发元素都要带上：
     // 宿主的全局 click（boot/globalEvent/click.ts 的 globalClickHideMenu）会在任何 click
     // 之后关掉共享菜单，只有被点元素在菜单内、或带这个标记时才放过——否则点一下按钮，
@@ -305,6 +319,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
                 setEditorLigatures(editor, ligatures);
             }
         },
+        setFontSize: applyFontSize,
         dispose: () => {
             disposed = true;
             debug("dispose tab", {link, dirty, readOnly});
@@ -556,6 +571,7 @@ export function refreshEditorSettings(settings: Settings, editor: IEditorConf = 
         tab.setLineNumbers(showLineNumbers);
         tab.setLineWrap(wrap);
         tab.setLigatures(ligatures);
+        tab.setFontSize(settings.fontSize);
     });
 }
 

@@ -67,6 +67,8 @@
   "lineWrapTip": "Whether content wider than the editor wraps automatically",
   "ligatures": "Ligatures",
   "ligaturesTip": "Whether the code font's ligatures apply, such as => and !=",
+  "fontSize": "Font size",
+  "fontSizeTip": "Font size of the editor text in px. Leave it empty to follow SiYuan and match code blocks",
   "restoreCursor": "Restore position",
   "restoreCursorTip": "Return to the previous scroll position and cursor when the same file is reopened",
   "debugMode": "Debug mode",

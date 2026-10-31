@@ -51,6 +51,7 @@ describe("normalizeSettings", () => {
             lineNumbers: "auto",
             lineWrap: "on",
             ligatures: "off",
+            fontSize: 18,
             openMode: "preview",
             desktopForm: "dialog",
             restoreCursor: false,
@@ -67,6 +68,7 @@ describe("normalizeSettings", () => {
             lineNumbers: "auto",
             lineWrap: "on",
             ligatures: "off",
+            fontSize: 18,
             openMode: "preview",
             desktopForm: "dialog",
             restoreCursor: false,
@@ -104,6 +106,16 @@ describe("normalizeSettings", () => {
         expect(normalizeSettings({maxSizeMB: "0.5"}).maxSizeMB).toBe(0.5);
         for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "abc", null, {}]) {
             expect(normalizeSettings({maxSizeMB: value}).maxSizeMB).toBe(DEFAULT_SETTINGS.maxSizeMB);
+        }
+    });
+
+    it("fontSize 只接受正数，四舍五入并夹到上限", () => {
+        expect(normalizeSettings({fontSize: 18}).fontSize).toBe(18);
+        expect(normalizeSettings({fontSize: "20"}).fontSize).toBe(20);
+        expect(normalizeSettings({fontSize: 18.6}).fontSize).toBe(19);
+        expect(normalizeSettings({fontSize: 200}).fontSize).toBe(72);
+        for (const value of [0, -1, Number.NaN, "abc", null, {}]) {
+            expect(normalizeSettings({fontSize: value}).fontSize).toBe(0);
         }
     });
 

@@ -52,6 +52,8 @@ const labels = {
     enable: "开启",
     ligatures: "连字",
     ligaturesTip: "连字提示",
+    fontSize: "字号",
+    fontSizeTip: "字号提示",
     restoreCursor: "恢复光标",
     restoreCursorTip: "恢复光标提示",
     debugMode: "调试",
@@ -117,6 +119,7 @@ describe("openSettingsPanel", () => {
             labels.lineNumbers,
             labels.lineWrap,
             labels.ligatures,
+            labels.fontSize,
             labels.restoreCursor,
             labels.debugMode,
             labels.forget,
@@ -127,7 +130,7 @@ describe("openSettingsPanel", () => {
         __setFrontend("mobile");
         const {setting} = open();
         expect(setting.items.map((item) => item.title)).not.toContain(labels.takeoverGesture);
-        expect(setting.items).toHaveLength(14);
+        expect(setting.items).toHaveLength(15);
     });
 
     it("移动端与独立窗口不渲染形态选项", () => {
@@ -298,6 +301,32 @@ describe("openSettingsPanel", () => {
             lineWrap: "off",
             ligatures: "on",
         }));
+    });
+
+    it("字号只接受正数，留空跟随思源", () => {
+        const {control, onSave} = open({fontSize: 0});
+        const wrapper = control(labels.fontSize);
+        expect(wrapper.className).toBe("editor-siyuan-settings__number");
+        const input = wrapper.querySelector("input") as HTMLInputElement;
+        expect(input.type).toBe("number");
+        expect(input.value).toBe("");
+        expect(input.placeholder).toBe(labels.followSiYuan);
+
+        type(input, "18");
+        settingConfirm(onSave);
+        expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 18}));
+
+        type(input, "0");
+        settingConfirm(onSave);
+        expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 0}));
+
+        type(input, "200");
+        settingConfirm(onSave);
+        expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 72}));
+
+        type(input, "abc");
+        settingConfirm(onSave);
+        expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 0}));
     });
 
     it("清除记忆按钮显示条数，点击后调用 onForget 并刷新", async () => {

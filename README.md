@@ -6,7 +6,7 @@ Open and edit the text files a note links to, inside SiYuan. The editor uses you
 
 ## What it does
 
-SiYuan renders a link to a file in `assets/` as an ordinary hyperlink. Clicking it hands the file to the system default application — a text editor, or nothing at all. This plugin opens it in SiYuan instead, in a custom tab with syntax highlighting, line numbers, search, undo and redo.
+SiYuan renders a link to a file in `assets/` as an ordinary hyperlink. Clicking it hands the file to the system default application — a text editor, or nothing at all. This plugin opens it in SiYuan instead, in a custom tab with syntax highlighting, line numbers, search, completion, undo and redo.
 
 Three ways in:
 
@@ -60,6 +60,7 @@ These are consequences of the plugin API, not oversights.
 - **Assets in encrypted notebooks are refused.** The kernel resolves them to a temporary plaintext copy; writing that copy back would silently discard the change.
 - **Large files settle a step late.** If one full highlight pass exceeds 8 ms it switches to re-highlighting once you stop typing, so colours land a moment later; formatting and minification run on the main thread, so a file of a few MB stalls the UI for a few seconds.
 - **No detection of outside changes.** If another program edits the file, only reopening the editor shows it.
+- **Completion is word-level.** It offers the current language's keywords and words already in the document. There is no syntax tree, so no type-aware, member or cross-file completion.
 - **Two browser paths are left to the browser.** `Ctrl+W` closes the browser's own tab, where neither the close confirmation nor the stash can run — all the plugin can do is let `beforeunload` raise the browser's generic prompt; outside HTTPS the context menu's Paste entry is greyed out, while `Ctrl+V` in the document itself still works.
 - **Mobile has no tabs and no modifier keys.** The editor is mounted in a full-screen dialog and only the × at the left end of the action bar closes it; the back key and system gestures fall back to the stash; takeover always treats a plain tap as the gesture.
 - **The floating window has no close button, and a popped-out SiYuan window can only use it.** The shell is SiYuan's native dialog with only the close icon removed, so close it with `Esc` or by clicking outside it (unsaved changes are confirmed first); a window popped out of SiYuan has no tab strip, so it always uses the floating window whatever the **Desktop form** setting says.

@@ -24,6 +24,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.9.0",
     "@codemirror/language": "^6.11.3",
     "@codemirror/search": "^6.5.11",

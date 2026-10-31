@@ -2,12 +2,14 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {EditorState} from "@codemirror/state";
 import {EditorView} from "@codemirror/view";
 import {indentUnit} from "@codemirror/language";
+import {completionStatus, currentCompletions, startCompletion} from "@codemirror/autocomplete";
 import {installHljs} from "../support/env";
 import {makeT} from "../../src/i18n";
 import {
     createEditor,
     readCursor,
     restoreCursor,
+    setEditorAutocomplete,
     setEditorLanguage,
     setEditorLigatures,
     setEditorLineNumbers,
@@ -25,6 +27,7 @@ interface IOptions {
     showLineNumbers?: boolean;
     lineWrap?: boolean;
     ligatures?: boolean;
+    autocomplete?: boolean;
     tabSpaces?: number;
     onContextMenu?: (event: MouseEvent) => void;
     onChange?: () => void;
@@ -41,6 +44,7 @@ function make(options: IOptions = {}): {view: EditorView; parent: HTMLElement; o
         showLineNumbers: options.showLineNumbers ?? false,
         lineWrap: options.lineWrap ?? false,
         ligatures: options.ligatures ?? false,
+        autocomplete: options.autocomplete ?? false,
         tabSpaces: options.tabSpaces ?? 4,
         t,
         onContextMenu: options.onContextMenu,
@@ -320,6 +324,57 @@ describe("事件", () => {
         const plain = new KeyboardEvent("keydown", {key: "F13", bubbles: true, cancelable: true});
         view.contentDOM.dispatchEvent(plain);
         expect(later).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("代码提示", () => {
+    const labels = (view: EditorView): string[] => currentCompletions(view.state).map((option) => option.label);
+
+    it("开启时列出当前语言的关键字与文档里的词", async () => {
+        installHljs({languages: ["javascript", "plaintext"], keywords: {javascript: {keyword: "for function"}}});
+        const {view} = make({doc: "foo f", autocomplete: true});
+        view.dispatch({selection: {anchor: 5}});
+        expect(startCompletion(view)).toBe(true);
+        // 候选来源是异步跑的（有 50ms 的防抖），等状态变成 active 再断言
+        await vi.waitFor(() => expect(completionStatus(view.state)).toBe("active"));
+        expect(labels(view)).toContain("for");
+        expect(labels(view)).toContain("foo");
+    });
+
+    it("关键字与文档词重名时只留一条，并保留关键字类型", async () => {
+        installHljs({languages: ["javascript", "plaintext"], keywords: {javascript: "const"}});
+        const {view} = make({doc: "const co", autocomplete: true});
+        view.dispatch({selection: {anchor: 8}});
+        startCompletion(view);
+        await vi.waitFor(() => expect(completionStatus(view.state)).toBe("active"));
+        expect(labels(view).filter((label) => label === "const")).toHaveLength(1);
+        expect(currentCompletions(view.state).find((option) => option.label === "const")?.type).toBe("keyword");
+    });
+
+    it("关闭补全时没有候选", () => {
+        installHljs();
+        const {view} = make({autocomplete: false});
+        expect(startCompletion(view)).toBe(false);
+        expect(completionStatus(view.state)).toBeNull();
+    });
+
+    it("只读时不注册补全，切回编辑后恢复", async () => {
+        installHljs({languages: ["javascript", "plaintext"], keywords: {javascript: "for"}});
+        const {view} = make({doc: "foo f", readOnly: true, autocomplete: true});
+        expect(startCompletion(view)).toBe(false);
+
+        setEditorReadOnly(view, false);
+        setEditorAutocomplete(view, true);
+        view.dispatch({selection: {anchor: 5}});
+        expect(startCompletion(view)).toBe(true);
+        await vi.waitFor(() => expect(completionStatus(view.state)).toBe("active"));
+    });
+
+    it("关掉设置后对已建立的编辑器立即生效", () => {
+        installHljs({languages: ["javascript", "plaintext"], keywords: {javascript: "const"}});
+        const {view} = make({autocomplete: true});
+        setEditorAutocomplete(view, false);
+        expect(startCompletion(view)).toBe(false);
     });
 });
 

@@ -24,6 +24,8 @@ interface IHljsResult {
 interface IHljsLanguage {
     name?: string;
     aliases?: string[];
+    /** 关键字定义：字符串、数组或按类别分组的对象，见 complete.ts。 */
+    keywords?: unknown;
 }
 
 interface IHljs {

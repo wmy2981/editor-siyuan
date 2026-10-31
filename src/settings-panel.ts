@@ -266,6 +266,14 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
     });
 
     setting.addItem({
+        title: t("autocomplete"),
+        description: t("autocompleteTip"),
+        actionElement: switchControl(draft.autocomplete, (checked) => {
+            draft.autocomplete = checked;
+        }),
+    });
+
+    setting.addItem({
         title: t("restoreCursor"),
         description: t("restoreCursorTip"),
         actionElement: switchControl(draft.restoreCursor, (checked) => {

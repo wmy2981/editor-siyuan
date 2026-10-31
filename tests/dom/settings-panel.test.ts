@@ -54,6 +54,8 @@ const labels = {
     ligaturesTip: "连字提示",
     fontSize: "字号",
     fontSizeTip: "字号提示",
+    autocomplete: "代码提示",
+    autocompleteTip: "代码提示说明",
     restoreCursor: "恢复光标",
     restoreCursorTip: "恢复光标提示",
     debugMode: "调试",
@@ -120,6 +122,7 @@ describe("openSettingsPanel", () => {
             labels.lineWrap,
             labels.ligatures,
             labels.fontSize,
+            labels.autocomplete,
             labels.restoreCursor,
             labels.debugMode,
             labels.forget,
@@ -130,7 +133,7 @@ describe("openSettingsPanel", () => {
         __setFrontend("mobile");
         const {setting} = open();
         expect(setting.items.map((item) => item.title)).not.toContain(labels.takeoverGesture);
-        expect(setting.items).toHaveLength(15);
+        expect(setting.items).toHaveLength(16);
     });
 
     it("移动端与独立窗口不渲染形态选项", () => {
@@ -206,6 +209,7 @@ describe("openSettingsPanel", () => {
             confirmOnClose: true,
             stashUnsaved: true,
             restoreCursor: true,
+            autocomplete: true,
             debug: false,
         });
         toggle(control(labels.previewSy), true);
@@ -213,6 +217,7 @@ describe("openSettingsPanel", () => {
         toggle(control(labels.confirmOnClose), false);
         toggle(control(labels.stashUnsaved), false);
         toggle(control(labels.restoreCursor), false);
+        toggle(control(labels.autocomplete), false);
         toggle(control(labels.debugMode), true);
         settingConfirm(onSave);
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
@@ -221,6 +226,7 @@ describe("openSettingsPanel", () => {
             confirmOnClose: false,
             stashUnsaved: false,
             restoreCursor: false,
+            autocomplete: false,
             debug: true,
         }));
     });

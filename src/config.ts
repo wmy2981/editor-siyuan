@@ -50,6 +50,8 @@ export interface Settings {
     ligatures: TFollow;
     /** 正文的字号，单位 px；0 表示跟随思源（与代码块同字号）。 */
     fontSize: number;
+    /** 输入时是否弹出代码提示。 */
+    autocomplete: boolean;
     /** 打开页签时先进入编辑还是只读预览。 */
     openMode: TOpenMode;
     /**
@@ -96,6 +98,7 @@ export const DEFAULT_SETTINGS: Settings = {
     lineWrap: "auto",
     ligatures: "auto",
     fontSize: 0,
+    autocomplete: true,
     openMode: "edit",
     desktopForm: "tab",
     restoreCursor: true,
@@ -132,6 +135,7 @@ export function normalizeSettings(raw: unknown): Settings {
         ligatures: pick(source.ligatures, FOLLOWS, DEFAULT_SETTINGS.ligatures),
         // 0 表示跟随思源；其余按 1–72 px 收拢，免得手改的 json 把版式撑坏
         fontSize: Number.isFinite(fontSize) && fontSize > 0 ? Math.min(MAX_FONT_SIZE, Math.round(fontSize)) : 0,
+        autocomplete: source.autocomplete !== false,
         openMode: pick(source.openMode, OPEN_MODES, DEFAULT_SETTINGS.openMode),
         desktopForm: pick(source.desktopForm, DESKTOP_FORMS, DEFAULT_SETTINGS.desktopForm),
         restoreCursor: source.restoreCursor !== false,

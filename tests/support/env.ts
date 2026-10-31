@@ -81,6 +81,8 @@ export interface IHljsMockOptions {
      * 只有需要断言「语言列表里出现别名」的测试才传。
      */
     aliases?: Record<string, string[]>;
+    /** 关键字定义，形态与 hljs 一致，供补全的测试用。 */
+    keywords?: Record<string, unknown>;
     highlight?: (code: string, options: {language: string; ignoreIllegals?: boolean}) => any;
 }
 
@@ -109,7 +111,11 @@ export function installHljs(options: IHljsMockOptions = {}): {calls: IHljsCall[]
     const calls: IHljsCall[] = [];
     // 每门语言只有一个对象：hljs 就是这样让别名与规范名指向同一个定义，
     // 调用方（比如 language.ts 列语言时）靠它判断别名有没有撞到别的语言。
-    const definitions = new Map(languages.map((name) => [name, {name, aliases: aliases[name]}]));
+    const definitions = new Map(languages.map((name) => [name, {
+        name,
+        aliases: aliases[name],
+        keywords: options.keywords?.[name],
+    }]));
     const resolve = (name: string) => definitions.get(name) ?? Array.from(definitions.values())
         .find((definition) => definition.aliases?.includes(name));
     (window as any).hljs = {

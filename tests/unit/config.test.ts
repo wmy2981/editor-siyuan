@@ -52,6 +52,7 @@ describe("normalizeSettings", () => {
             lineWrap: "on",
             ligatures: "off",
             fontSize: 18,
+            autocomplete: false,
             openMode: "preview",
             desktopForm: "dialog",
             restoreCursor: false,
@@ -69,6 +70,7 @@ describe("normalizeSettings", () => {
             lineWrap: "on",
             ligatures: "off",
             fontSize: 18,
+            autocomplete: false,
             openMode: "preview",
             desktopForm: "dialog",
             restoreCursor: false,
@@ -131,6 +133,9 @@ describe("normalizeSettings", () => {
         expect(normalizeSettings({stashUnsaved: null}).stashUnsaved).toBe(true);
         expect(normalizeSettings({codeBlockMenu: null}).codeBlockMenu).toBe(true);
         expect(normalizeSettings({restoreCursor: null}).restoreCursor).toBe(true);
+        expect(normalizeSettings({autocomplete: "false"}).autocomplete).toBe(true);
+        expect(normalizeSettings({autocomplete: false}).autocomplete).toBe(false);
+        expect(normalizeSettings({autocomplete: true}).autocomplete).toBe(true);
     });
 
     it("忽略未知字段", () => {

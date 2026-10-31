@@ -23,6 +23,7 @@ import {
     createEditor,
     readCursor,
     restoreCursor,
+    setEditorAutocomplete,
     setEditorLanguage,
     setEditorLigatures,
     setEditorLineNumbers,
@@ -69,6 +70,8 @@ export interface IEditorTab {
     setLigatures(ligatures: boolean): void;
     /** 设置里改过字号偏好后，对已打开的页签立即生效。 */
     setFontSize(size: number): void;
+    /** 设置里改过补全开关后，对已打开的页签立即生效；只读页签始终关闭。 */
+    setAutocomplete(enabled: boolean): void;
     /** 页签销毁：记光标、暂存未保存内容、释放编辑器。 */
     dispose(): void;
     focus(): void;
@@ -320,6 +323,11 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             }
         },
         setFontSize: applyFontSize,
+        setAutocomplete: (enabled: boolean) => {
+            if (editor) {
+                setEditorAutocomplete(editor, enabled);
+            }
+        },
         dispose: () => {
             disposed = true;
             debug("dispose tab", {link, dirty, readOnly});
@@ -385,6 +393,8 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         readOnly = !readOnly;
         if (editor) {
             setEditorReadOnly(editor, readOnly);
+            // 预览模式不弹候选列表，切回编辑再按设置恢复
+            setEditorAutocomplete(editor, settings().autocomplete);
         }
         syncIcons();
     });
@@ -473,6 +483,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             lineWrap: lineWrapWanted(),
             ligatures: ligaturesWanted(),
             tabSpaces: config().editor.codeTabSpaces,
+            autocomplete: settings().autocomplete,
             t,
             // 移动端不拦 contextmenu：长按该交给系统那套文本菜单（剪切 / 复制 / 粘贴 / 全选），
             // 自制菜单在触屏上既和它重复，还会抢掉系统的选择手势。桌面端照旧用自己的右键菜单。
@@ -572,6 +583,7 @@ export function refreshEditorSettings(settings: Settings, editor: IEditorConf = 
         tab.setLineWrap(wrap);
         tab.setLigatures(ligatures);
         tab.setFontSize(settings.fontSize);
+        tab.setAutocomplete(settings.autocomplete);
     });
 }
 

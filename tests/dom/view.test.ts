@@ -27,6 +27,7 @@ import {
     createEditor,
     readCursor,
     restoreCursor,
+    setEditorAutocomplete,
     setEditorLanguage,
     setEditorLigatures,
     setEditorLineNumbers,
@@ -64,6 +65,7 @@ vi.mock("../../src/editor", () => ({
     createEditor: vi.fn(),
     readCursor: vi.fn(),
     restoreCursor: vi.fn(),
+    setEditorAutocomplete: vi.fn(),
     setEditorLanguage: vi.fn(),
     setEditorLigatures: vi.fn(),
     setEditorLineNumbers: vi.fn(),
@@ -240,6 +242,7 @@ describe("加载文件", () => {
             showLineNumbers: true,
             lineWrap: true,
             ligatures: true,
+            autocomplete: true,
             tabSpaces: 2,
         });
         expect(lastOptions.onContextMenu).toBeTypeOf("function");
@@ -501,6 +504,8 @@ describe("操作条", () => {
         const tab = await openReady();
         readonlyIcon(tab).click();
         expect(setEditorReadOnly).toHaveBeenCalledWith(editor, true);
+        // 只读时补全由编辑器自己按 state.readOnly 关掉，视图只把设置里的开关原样传下去
+        expect(setEditorAutocomplete).toHaveBeenCalledWith(editor, true);
         expect(readonlyIcon(tab).getAttribute("aria-label")).toBe("切到编辑");
         expect(readonlyIcon(tab).innerHTML).toContain("#iconEdit");
 
@@ -674,6 +679,7 @@ describe("设置联动", () => {
         expect(setEditorLineNumbers).toHaveBeenLastCalledWith(editor, true);
         expect(setEditorLineWrap).toHaveBeenLastCalledWith(editor, false);
         expect(setEditorLigatures).toHaveBeenLastCalledWith(editor, true);
+        expect(setEditorAutocomplete).toHaveBeenLastCalledWith(editor, true);
     });
 
     it("watchEditorConfig 只响应 setConf 且带 editor 的事件", async () => {

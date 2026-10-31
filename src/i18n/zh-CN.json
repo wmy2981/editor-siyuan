@@ -69,6 +69,8 @@
   "ligaturesTip": "代码字体的连字是否生效，例如 => 与 !=",
   "fontSize": "字号",
   "fontSizeTip": "编辑器正文的字号，单位 px。留空跟随思源设置，与代码块同字号",
+  "autocomplete": "代码提示",
+  "autocompleteTip": "输入时列出当前语言的关键字与文档里已有的词；只到词级，没有类型或成员补全",
   "restoreCursor": "恢复位置",
   "restoreCursorTip": "重新打开同一文件时回到上次的滚动位置与光标",
   "debugMode": "调试模式",

@@ -47,15 +47,18 @@ import {
     ViewPlugin,
 } from "@codemirror/view";
 import {defaultKeymap, history, historyKeymap, indentWithTab, redo, redoDepth, undo, undoDepth} from "@codemirror/commands";
+import {acceptCompletion, completionKeymap} from "@codemirror/autocomplete";
 import {searchKeymap} from "@codemirror/search";
 import {indentOnInput, indentUnit} from "@codemirror/language";
 import {normalizeLanguage, PLAIN_TEXT} from "./language";
+import {autocompleteExtensions} from "./complete";
 import {siyuanSearch, toggleSearchPanel} from "./search";
 import type {T} from "./i18n";
 
 export const readOnlyCompartment = new Compartment();
 export const lineNumbersCompartment = new Compartment();
 export const lineWrapCompartment = new Compartment();
+export const autocompleteCompartment = new Compartment();
 
 /** 一次整篇高亮超过这个耗时就不再逐键同步做。 */
 const SYNC_BUDGET_MS = 8;
@@ -191,6 +194,9 @@ const highlightField = StateField.define<IHighlight>({
     },
 });
 
+/** 当前语法高亮语言。initialLanguage facet 只记初始值，之后换语言改的是高亮状态。 */
+export const editorLanguage = (state: EditorState): string => state.field(highlightField).language;
+
 /** 只在「同步档放不下」时工作：停止输入后补算一次整篇高亮。 */
 const hljsDebounce = ViewPlugin.fromClass(class {
     private timer: number | undefined;
@@ -238,6 +244,8 @@ export interface IEditorOptions {
     lineWrap: boolean;
     /** 代码字体的连字是否生效；思源 editor.codeLigatures。 */
     ligatures: boolean;
+    /** 是否提供代码提示；只读时一律不注册，见 createEditor。 */
+    autocomplete: boolean;
     /** 思源 editor.codeTabSpaces；0 表示用制表符。 */
     tabSpaces: number;
     /** 搜索面板的文案。 */
@@ -283,6 +291,10 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                 indentUnit.of(indent),
                 EditorState.tabSize.of(options.tabSpaces === 0 ? 4 : options.tabSpaces),
                 keymap.of([
+                    // 候选列表开着时，Tab / Enter / 方向键先作用于列表；列表没开时
+                    // acceptCompletion 返回 false，按键照常落到后面的 defaultKeymap 与 indentWithTab。
+                    ...completionKeymap,
+                    {key: "Tab", run: acceptCompletion},
                     // ⌘F 是开关而不只是打开，所以压在 searchKeymap 之前：
                     // 同一批绑定里靠前的那条先命中，返回 true 后面的就不再跑。
                     {key: "Mod-f", run: toggleSearchPanel, scope: "editor search-panel"},
@@ -292,6 +304,10 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
                     indentWithTab,
                 ]),
                 readOnlyCompartment.of(readOnlyExtensions(options.readOnly)),
+                // 只读时不在配置层注册补全，预览模式因此不会弹出候选列表
+                autocompleteCompartment.of(
+                    options.autocomplete && !options.readOnly ? autocompleteExtensions(editorLanguage) : [],
+                ),
                 lineNumbersCompartment.of(options.showLineNumbers ? lineNumbers() : []),
                 lineWrapCompartment.of(options.lineWrap ? EditorView.lineWrapping : []),
                 initialLanguage.of(options.language),
@@ -316,9 +332,9 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
         }
     });
     // 右键菜单：正文交回插件自建（思源自己的编辑器菜单只认 ProseMirror 选区），
-    // 搜索面板里的输入框则原样放行，让宿主弹它的 Electron 原生菜单。
+    // 搜索面板里的输入框与补全候选列表则原样放行，让宿主弹它的 Electron 原生菜单。
     view.dom.addEventListener("contextmenu", (event) => {
-        if (!options.onContextMenu || (event.target as HTMLElement).closest(".editor-siyuan-search")) {
+        if (!options.onContextMenu || (event.target as HTMLElement).closest(".editor-siyuan-search, .cm-tooltip")) {
             return;
         }
         event.preventDefault();
@@ -330,6 +346,12 @@ export function createEditor(parent: HTMLElement, options: IEditorOptions): Edit
 
 export const setEditorReadOnly = (view: EditorView, readOnly: boolean): void => {
     view.dispatch({effects: readOnlyCompartment.reconfigure(readOnlyExtensions(readOnly))});
+};
+
+export const setEditorAutocomplete = (view: EditorView, enabled: boolean): void => {
+    // 只读时不注册补全扩展；切回编辑后按开关恢复
+    const on = enabled && !view.state.readOnly;
+    view.dispatch({effects: autocompleteCompartment.reconfigure(on ? autocompleteExtensions(editorLanguage) : [])});
 };
 
 export const setEditorLineNumbers = (view: EditorView, show: boolean): void => {

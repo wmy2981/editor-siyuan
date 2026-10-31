@@ -279,6 +279,42 @@
   }
 }
 
+// ---- 代码提示 ----
+// 候选列表挂在 .cm-tooltip.cm-tooltip-autocomplete 里，基础主题给它写死的底色与选中色
+// （&light 下是 #17c），这里换成思源的浮层外观。选择器带四个类，压得过基础主题
+// （&light 展开后是两个类）。字号与正文一致：设置里改过字号时也一起跟着走。
+.editor-siyuan .cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+  background-color: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  border: 1px solid var(--b3-border-color);
+  border-radius: var(--b3-border-radius-b);
+  box-shadow: var(--b3-dialog-shadow);
+  overflow: hidden;
+
+  > ul {
+    font-family: var(--b3-font-family-editor-code, var(--b3-font-family-code));
+    font-size: var(--editor-siyuan-font-size, calc(var(--b3-font-size-editor) * .85));
+    min-width: 180px;
+
+    > li {
+      padding: 3px 8px;
+      line-height: 1.5;
+    }
+  }
+}
+
+// 选中项：用思源的列表悬停色，不用基础主题的深蓝。
+.editor-siyuan .cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+  background-color: var(--b3-list-hover);
+  color: var(--b3-theme-on-background);
+}
+
+// 匹配到的字符：基础主题画的是下划线，这里换成主色。
+.editor-siyuan .cm-editor .cm-tooltip-autocomplete .cm-completionMatchedText {
+  color: var(--b3-theme-primary);
+  text-decoration: none;
+}
+
 // ---- 语言下拉 ----
 // .b3-menu__filter 自带 min-width:260px / max-width:420px，不放开会把搜索框卡在菜单中间。
 .b3-menu__filter.editor-siyuan__lang-filter {

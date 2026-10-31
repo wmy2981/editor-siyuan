@@ -97,6 +97,7 @@ class SiyuanSearchPanel implements Panel {
     private query: SearchQuery;
     private readonly searchField: HTMLInputElement;
     private readonly replaceField: HTMLInputElement;
+    private readonly replaceRow: HTMLElement;
     private readonly flags = new Map<TFlag, HTMLElement>();
 
     constructor(private readonly view: EditorView, t: T) {
@@ -116,7 +117,7 @@ ${iconButton("next", "iconRight", t("searchNext"))}
 ${iconButton("close", "iconClose", t("searchClose"))}
 </div>
 </div>
-<div class="editor-siyuan-search__row">
+<div class="editor-siyuan-search__row editor-siyuan-search__replace">
 <div class="b3-form__icon editor-siyuan-search__field">
 <svg class="b3-form__icon-icon"><use xlink:href="#iconReplace"></use></svg>
 <input class="b3-text-field b3-form__icon-input" data-type="replaceText" autocomplete="off" spellcheck="false" placeholder="${escapeHtml(t("replacePlaceholder"))}" aria-label="${escapeHtml(t("replacePlaceholder"))}">
@@ -127,6 +128,7 @@ ${iconButton("close", "iconClose", t("searchClose"))}
 
         this.searchField = this.dom.querySelector<HTMLInputElement>('[data-type="search"]')!;
         this.replaceField = this.dom.querySelector<HTMLInputElement>('[data-type="replaceText"]')!;
+        this.replaceRow = this.dom.querySelector<HTMLElement>(".editor-siyuan-search__replace")!;
         for (const flag of FLAGS) {
             this.flags.set(flag, this.dom.querySelector<HTMLElement>(`[data-type="${flag}"]`)!);
         }
@@ -166,6 +168,7 @@ ${iconButton("close", "iconClose", t("searchClose"))}
         this.bind("replaceAll", () => replaceAll(this.view));
 
         this.syncFlags();
+        this.syncReadOnly(view.state.readOnly);
     }
 
     mount(): void {
@@ -184,6 +187,7 @@ ${iconButton("close", "iconClose", t("searchClose"))}
                 }
             }
         }
+        this.syncReadOnly(update.state.readOnly);
     }
 
     /**
@@ -218,6 +222,17 @@ ${iconButton("close", "iconClose", t("searchClose"))}
         this.flags.forEach((element, flag) => {
             element.querySelector("svg")!.classList.toggle("ft__primary", this.query[flag]);
         });
+    }
+
+    /**
+     * 替换行只在可编辑时出现。
+     *
+     * @codemirror/search 的 replaceNext 与 replaceAll 在只读时直接返回 false，
+     * 那两个按钮必然无效，摆在那里只是给用户一个静默失败。面板实例会跨模式切换存活
+     * （只读按钮只 reconfigure compartment，不重建面板），所以 update 里按当前状态同步。
+     */
+    private syncReadOnly(readOnly: boolean): void {
+        this.replaceRow.classList.toggle("fn__none", readOnly);
     }
 }
 

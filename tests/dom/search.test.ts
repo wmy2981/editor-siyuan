@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {EditorState} from "@codemirror/state";
+import {Compartment, EditorState} from "@codemirror/state";
 import {EditorView} from "@codemirror/view";
 import {
     getSearchQuery,
@@ -46,6 +46,9 @@ const searchField = (view: EditorView): HTMLInputElement =>
 
 const replaceField = (view: EditorView): HTMLInputElement =>
     panel(view)!.querySelector<HTMLInputElement>('[data-type="replaceText"]')!;
+
+const replaceRow = (view: EditorView): HTMLElement =>
+    panel(view)!.querySelector<HTMLElement>(".editor-siyuan-search__replace")!;
 
 function type(input: HTMLInputElement, value: string): void {
     input.value = value;
@@ -166,6 +169,30 @@ describe("面板结构", () => {
         expect(field.value).toBe("foo");
         expect(field.selectionStart).toBe(0);
         expect(field.selectionEnd).toBe(3);
+    });
+
+    it("只读时整行替换控件隐藏，切回编辑后恢复", () => {
+        const readOnly = new Compartment();
+        const parent = document.createElement("div");
+        document.body.append(parent);
+        const view = new EditorView({
+            parent,
+            state: EditorState.create({
+                doc: "foo foo",
+                extensions: [siyuanSearch(t), readOnly.of(EditorState.readOnly.of(true))],
+            }),
+        });
+        views.push(view);
+        openSearchPanel(view);
+        expect(replaceRow(view).classList.contains("fn__none")).toBe(true);
+        // 替换框与两个按钮都在这一行里，跟着一起藏起来
+        expect(replaceField(view).closest(".editor-siyuan-search__replace")).toBe(replaceRow(view));
+
+        view.dispatch({effects: readOnly.reconfigure(EditorState.readOnly.of(false))});
+        expect(replaceRow(view).classList.contains("fn__none")).toBe(false);
+
+        view.dispatch({effects: readOnly.reconfigure(EditorState.readOnly.of(true))});
+        expect(replaceRow(view).classList.contains("fn__none")).toBe(true);
     });
 });
 

@@ -16,6 +16,15 @@ Three ways in:
 
 Only files in the workspace's `assets/` folder are handled. Links to absolute paths outside the workspace (`file:///...`) are left alone. The `.sy` preview only handles notes inside the workspace.
 
+## Syntax colours
+
+**Syntax colours** in the plugin settings decides how the editor paints code.
+
+- **Follow SiYuan** (the default) reuses the code block theme from **Settings - Appearance**, so the editor and code blocks always match.
+- **VS Code** and **GitHub** are complete schemes shipped with the plugin. Each has a light and a dark version, picked by SiYuan's own appearance mode, and each covers the whole token vocabulary highlight.js emits: keywords, types, class and function names, variables and parameters, properties, tags, meta, escapes, regexps, diff lines and markup headings.
+
+The colours come from the platforms themselves (VS Code Light+ / Dark+, GitHub's PrettyLights). Only token colours change: the background stays SiYuan's, so the action bar, gutter, search panel and selection keep the theme's look. Switching schemes recolours editors that are already open.
+
 ## Requirements
 
 SiYuan 3.8.3 or later.
@@ -59,6 +68,7 @@ These are consequences of the plugin API, not oversights.
 - **Files over the size limit are not opened, and the click cannot be handed back to SiYuan.** Interception must happen synchronously, but the size is only known after asking the kernel; an oversized file therefore opens an editor that explains why and points at the link's context menu entry for opening it externally.
 - **Assets in encrypted notebooks are refused.** The kernel resolves them to a temporary plaintext copy; writing that copy back would silently discard the change.
 - **Large files settle a step late.** If one full highlight pass exceeds 8 ms it switches to re-highlighting once you stop typing, so colours land a moment later; formatting and minification run on the main thread, so a file of a few MB stalls the UI for a few seconds.
+- **Scheme colours follow highlight.js tokens, not VSCode's semantic ones.** `if` and `const` share one keyword colour because the engine does not separate control flow from declarations, and JSON keys, HTML attribute names and CSS properties share one property colour. Same palettes, coarser granularity than the real editors.
 - **No detection of outside changes.** If another program edits the file, only reopening the editor shows it.
 - **Completion is word-level.** It offers the current language's keywords and words already in the document. There is no syntax tree, so no type-aware, member or cross-file completion.
 - **Two browser paths are left to the browser.** `Ctrl+W` closes the browser's own tab, where neither the close confirmation nor the stash can run — all the plugin can do is let `beforeunload` raise the browser's generic prompt; outside HTTPS the context menu's Paste entry is greyed out, while `Ctrl+V` in the document itself still works.

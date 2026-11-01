@@ -6,7 +6,8 @@
  * 所以外壳用插件自己的类名，颜色全部取自思源的 CSS 变量
  * （--b3-theme-background / --b3-theme-on-background / --b3-font-family-editor-code
  * / --b3-font-size-editor / --b3-border-color / --b3-list-hover）。
- * 语法配色仍然复用用户选定的那份 hljs 主题样式表，见 theme.ts。
+ * 语法配色两条路：默认用用户选定的那份 hljs 主题样式表（见 theme.ts），
+ * 选了插件自带的方案则改用 schemes/ 里的色板，靠根元素的 data-highlight 属性切换。
  *
  * 顶部一条操作条：左侧是可点的语言标签、撤销 / 重做与换行开关，右侧依次是查找、只读切换与保存。
  * 图标按钮只留 aria-label 给读屏，不挂思源的 .ariaLabel：那一栏紧贴正文，
@@ -39,6 +40,7 @@ import {
     rememberLanguage,
     stashedEntry,
     type Settings,
+    type THighlight,
 } from "./config";
 import {guessLanguage, PLAIN_TEXT} from "./language";
 import {isMobileFrontend} from "./frontend";
@@ -70,6 +72,8 @@ export interface IEditorTab {
     setLigatures(ligatures: boolean): void;
     /** 设置里改过字号偏好后，对已打开的页签立即生效。 */
     setFontSize(size: number): void;
+    /** 设置里改过配色方案后，对已打开的页签立即生效。 */
+    setHighlight(scheme: THighlight): void;
     /** 设置里改过补全开关后，对已打开的页签立即生效；只读页签始终关闭。 */
     setAutocomplete(enabled: boolean): void;
     /** 页签销毁：记光标、暂存未保存内容、释放编辑器。 */
@@ -139,6 +143,23 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         }
     };
     applyFontSize(settings().fontSize);
+
+    /**
+     * 配色方案的开关只有一个属性。
+     *
+     * 跟随思源时属性不存在，插件方案才写出 `data-highlight="vscode|github"`：
+     * index.scss 里所有方案规则都写成 `.editor-siyuan[data-highlight] …`，
+     * 于是「跟随思源」既不写属性也不必加 :not()，方案色也不会漏到思源自己的代码块上。
+     * 深浅色由思源写在 <html> 上的 data-theme-mode 决定，这里不参与。
+     */
+    const applyHighlight = (scheme: THighlight): void => {
+        if (scheme === "follow") {
+            root.removeAttribute("data-highlight");
+        } else {
+            root.setAttribute("data-highlight", scheme);
+        }
+    };
+    applyHighlight(settings().highlight);
     // data-menu="true" 是思源给「点开菜单的元素」打的标记，两个菜单触发元素都要带上：
     // 宿主的全局 click（boot/globalEvent/click.ts 的 globalClickHideMenu）会在任何 click
     // 之后关掉共享菜单，只有被点元素在菜单内、或带这个标记时才放过——否则点一下按钮，
@@ -323,6 +344,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             }
         },
         setFontSize: applyFontSize,
+        setHighlight: applyHighlight,
         setAutocomplete: (enabled: boolean) => {
             if (editor) {
                 setEditorAutocomplete(editor, enabled);
@@ -573,7 +595,7 @@ interface IEditorConf {
     codeSyntaxHighlightLineNum: boolean;
 }
 
-/** 显示类设置（行号、换行、连字）在设置里改过之后，对已打开的页签立即生效。 */
+/** 显示类设置（行号、换行、连字、配色）在设置里改过之后，对已打开的页签立即生效。 */
 export function refreshEditorSettings(settings: Settings, editor: IEditorConf = config().editor): void {
     const showLineNumbers = settings.lineNumbers === "show" ||
         (settings.lineNumbers === "auto" && editor.codeSyntaxHighlightLineNum);
@@ -586,6 +608,7 @@ export function refreshEditorSettings(settings: Settings, editor: IEditorConf = 
         tab.setLineWrap(wrap);
         tab.setLigatures(ligatures);
         tab.setFontSize(settings.fontSize);
+        tab.setHighlight(settings.highlight);
         tab.setAutocomplete(settings.autocomplete);
     });
 }

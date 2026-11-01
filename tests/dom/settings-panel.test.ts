@@ -52,6 +52,10 @@ const labels = {
     enable: "开启",
     ligatures: "连字",
     ligaturesTip: "连字提示",
+    highlight: "语法配色",
+    highlightTip: "配色提示",
+    schemeVsCode: "VS Code",
+    schemeGitHub: "GitHub",
     fontSize: "字号",
     fontSizeTip: "字号提示",
     autocomplete: "代码提示",
@@ -138,6 +142,7 @@ describe("openSettingsPanel", () => {
             labels.lineNumbers,
             labels.lineWrap,
             labels.ligatures,
+            labels.highlight,
             labels.fontSize,
             labels.autocomplete,
             labels.restoreCursor,
@@ -150,7 +155,7 @@ describe("openSettingsPanel", () => {
         __setFrontend("mobile");
         const {titles} = open();
         expect(titles()).not.toContain(labels.takeoverGesture);
-        expect(titles()).toHaveLength(16);
+        expect(titles()).toHaveLength(17);
     });
 
     it("移动端与独立窗口不渲染形态选项", () => {
@@ -175,6 +180,22 @@ describe("openSettingsPanel", () => {
         expect(onSave).not.toHaveBeenCalled();
         save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({desktopForm: "dialog"}));
+    });
+
+    it("配色方案：三选项齐全，默认跟随思源，改后随保存写盘", () => {
+        const {control, save, onSave} = open();
+        const select = control(labels.highlight) as HTMLSelectElement;
+        expect(select.value).toBe("follow");
+        expect(Array.from(select.options).map((option) => option.value)).toEqual(["follow", "vscode", "github"]);
+        expect(Array.from(select.options).map((option) => option.textContent)).toEqual([
+            labels.followSiYuan,
+            labels.schemeVsCode,
+            labels.schemeGitHub,
+        ]);
+        choose(select, "vscode");
+        expect(onSave).not.toHaveBeenCalled();
+        save();
+        expect(onSave).toHaveBeenCalledWith(expect.objectContaining({highlight: "vscode"}));
     });
 
     it("扩展名项占整行", () => {

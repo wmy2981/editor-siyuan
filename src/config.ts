@@ -26,6 +26,9 @@ export type TLineNumbers = "auto" | "show" | "hide";
 /** 跟随思源 / 强制开启 / 强制关闭，用于换行与连字这类思源也有的开关。 */
 export type TFollow = "auto" | "on" | "off";
 
+/** 语法配色方案：follow 沿用思源设置里的代码块主题，其余两套是插件自带的色板。 */
+export type THighlight = "follow" | "vscode" | "github";
+
 /** 页签打开时的模式；preview 即操作条上的只读态。 */
 export type TOpenMode = "edit" | "preview";
 
@@ -50,6 +53,13 @@ export interface Settings {
     ligatures: TFollow;
     /** 正文的字号，单位 px；0 表示跟随思源（与代码块同字号）。 */
     fontSize: number;
+    /**
+     * 语法配色方案。
+     *
+     * follow 时配色与思源代码块逐项一致（连同一份主题样式表）；vscode / github 是插件自带的
+     * 完整色板，各含浅色与深色两版，按思源的当前外观自动切换，见 index.scss 与 schemes/。
+     */
+    highlight: THighlight;
     /** 输入时是否弹出代码提示。 */
     autocomplete: boolean;
     /** 打开页签时先进入编辑还是只读预览。 */
@@ -98,6 +108,7 @@ export const DEFAULT_SETTINGS: Settings = {
     lineWrap: "auto",
     ligatures: "auto",
     fontSize: 0,
+    highlight: "follow",
     autocomplete: true,
     openMode: "edit",
     desktopForm: "tab",
@@ -112,6 +123,7 @@ const LINE_NUMBERS: TLineNumbers[] = ["auto", "show", "hide"];
 const FOLLOWS: TFollow[] = ["auto", "on", "off"];
 const OPEN_MODES: TOpenMode[] = ["edit", "preview"];
 const DESKTOP_FORMS: TDesktopForm[] = ["tab", "dialog"];
+const HIGHLIGHTS: THighlight[] = ["follow", "vscode", "github"];
 
 /** 自定义字号的上限，单位 px。 */
 export const MAX_FONT_SIZE = 72;
@@ -135,6 +147,7 @@ export function normalizeSettings(raw: unknown): Settings {
         ligatures: pick(source.ligatures, FOLLOWS, DEFAULT_SETTINGS.ligatures),
         // 0 表示跟随思源；其余按 1–72 px 收拢，免得手改的 json 把版式撑坏
         fontSize: Number.isFinite(fontSize) && fontSize > 0 ? Math.min(MAX_FONT_SIZE, Math.round(fontSize)) : 0,
+        highlight: pick(source.highlight, HIGHLIGHTS, DEFAULT_SETTINGS.highlight),
         autocomplete: source.autocomplete !== false,
         openMode: pick(source.openMode, OPEN_MODES, DEFAULT_SETTINGS.openMode),
         desktopForm: pick(source.desktopForm, DESKTOP_FORMS, DEFAULT_SETTINGS.desktopForm),

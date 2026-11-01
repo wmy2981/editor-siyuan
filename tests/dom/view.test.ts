@@ -666,6 +666,27 @@ describe("字号", () => {
     });
 });
 
+describe("配色方案", () => {
+    it("插件方案写成根元素上的 data-highlight", async () => {
+        settings = makeSettings({highlight: "github"});
+        const tab = await openReady();
+        expect(tab.element.getAttribute("data-highlight")).toBe("github");
+    });
+
+    it("跟随思源时不写这个属性", async () => {
+        const tab = await openReady();
+        expect(tab.element.hasAttribute("data-highlight")).toBe(false);
+    });
+
+    it("设置改动后对已打开的页签立即生效，切回跟随思源时删掉属性", async () => {
+        const tab = await openReady();
+        refreshEditorSettings(makeSettings({highlight: "vscode"}));
+        expect(tab.element.getAttribute("data-highlight")).toBe("vscode");
+        refreshEditorSettings(makeSettings({highlight: "follow"}));
+        expect(tab.element.hasAttribute("data-highlight")).toBe(false);
+    });
+});
+
 describe("设置联动", () => {
     it("refreshEditorSettings 按设置与思源配置重算三项", async () => {
         const first = await openReady();

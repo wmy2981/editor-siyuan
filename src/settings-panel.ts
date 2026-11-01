@@ -26,6 +26,7 @@ import {
     type Settings,
     type TDesktopForm,
     type TFollow,
+    type THighlight,
     type TLineNumbers,
     type TOpenMode,
     type TTakeover,
@@ -294,6 +295,18 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
             {value: "off", label: t("disable")},
         ], (value) => {
             draft.ligatures = value as TFollow;
+        }),
+    });
+
+    rows.push({
+        title: t("highlight"),
+        description: t("highlightTip"),
+        control: selectControl(draft.highlight, [
+            {value: "follow", label: t("followSiYuan")},
+            {value: "vscode", label: t("schemeVsCode")},
+            {value: "github", label: t("schemeGitHub")},
+        ], (value) => {
+            draft.highlight = value as THighlight;
         }),
     });
 

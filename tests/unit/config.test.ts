@@ -52,6 +52,7 @@ describe("normalizeSettings", () => {
             lineWrap: "on",
             ligatures: "off",
             fontSize: 18,
+            highlight: "github",
             autocomplete: false,
             openMode: "preview",
             desktopForm: "dialog",
@@ -70,6 +71,7 @@ describe("normalizeSettings", () => {
             lineWrap: "on",
             ligatures: "off",
             fontSize: 18,
+            highlight: "github",
             autocomplete: false,
             openMode: "preview",
             desktopForm: "dialog",
@@ -86,6 +88,7 @@ describe("normalizeSettings", () => {
             lineNumbers: "AUTO",
             lineWrap: "yes",
             ligatures: 1,
+            highlight: "one-dark",
             openMode: "read",
             desktopForm: "window",
         });
@@ -93,8 +96,19 @@ describe("normalizeSettings", () => {
         expect(settings.lineNumbers).toBe(DEFAULT_SETTINGS.lineNumbers);
         expect(settings.lineWrap).toBe(DEFAULT_SETTINGS.lineWrap);
         expect(settings.ligatures).toBe(DEFAULT_SETTINGS.ligatures);
+        expect(settings.highlight).toBe(DEFAULT_SETTINGS.highlight);
         expect(settings.openMode).toBe(DEFAULT_SETTINGS.openMode);
         expect(settings.desktopForm).toBe(DEFAULT_SETTINGS.desktopForm);
+    });
+
+    it("highlight 只认三套已知方案，默认跟随思源", () => {
+        expect(DEFAULT_SETTINGS.highlight).toBe("follow");
+        for (const value of ["follow", "vscode", "github"]) {
+            expect(normalizeSettings({highlight: value}).highlight).toBe(value);
+        }
+        for (const value of ["VSCODE", "GitHub", "", null, 1, {}]) {
+            expect(normalizeSettings({highlight: value}).highlight).toBe("follow");
+        }
     });
 
     it("extensions 只接受字符串", () => {

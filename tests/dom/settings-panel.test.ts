@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import type {Plugin as SiyuanPlugin} from "siyuan";
-import {Plugin, Setting, __setFrontend} from "../support/siyuan";
+import {Dialog, Plugin, __setFrontend} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {
     DEFAULT_EXTENSIONS,
@@ -63,6 +63,8 @@ const labels = {
     forget: "清除记忆",
     forgetTip: "清除提示",
     forgetButton: "清除 {count} 条",
+    cancel: "取消",
+    save: "保存",
 };
 
 const t = makeT(labels);
@@ -71,9 +73,26 @@ function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
     const onSave = vi.fn();
     const onForget = vi.fn();
     openSettingsPanel({title: "文本编辑器", t, settings: makeSettings(overrides), onSave, onForget});
-    const setting = Setting.instances[Setting.instances.length - 1];
-    const control = (title: string): HTMLElement => setting.controls.get(title)!;
-    return {setting, onSave, onForget, control};
+    const dialog = Dialog.instances[Dialog.instances.length - 1];
+    const row = (title: string): HTMLElement => {
+        const found = Array.from(dialog.element.querySelectorAll<HTMLElement>(".config-item"))
+            .find((item) => item.querySelector(".config-name")?.textContent === title);
+        if (!found) {
+            throw new Error(`没有这一行：${title}`);
+        }
+        return found;
+    };
+    /** 行尾那个元素就是控件；整行的项（文本域）与宿主一样挂在 .fn__block 里。 */
+    const control = (title: string): HTMLElement => {
+        const item = row(title);
+        const host = item.classList.contains("fn__flex") ? item : item.querySelector<HTMLElement>(".fn__block")!;
+        return host.lastElementChild as HTMLElement;
+    };
+    const titles = (): Array<string | null> =>
+        Array.from(dialog.element.querySelectorAll(".config-name")).map((item) => item.textContent);
+    const save = (): void => (dialog.element.querySelector(".b3-button--text") as HTMLButtonElement).click();
+    const cancel = (): void => (dialog.element.querySelector(".b3-button--cancel") as HTMLButtonElement).click();
+    return {dialog, control, row, titles, save, cancel, onSave, onForget};
 }
 
 function toggle(element: HTMLElement, checked: boolean): void {
@@ -100,14 +119,12 @@ describe("openSettingsPanel", () => {
     });
 
     it("用插件显示名打开设置面板", () => {
-        const {setting} = open();
-        expect(setting.opened).toBe(true);
-        expect(setting.title).toBe("文本编辑器");
+        const {dialog} = open();
+        expect(dialog.options.title).toBe("文本编辑器");
     });
 
     it("桌面端渲染全部设置项，顺序稳定", () => {
-        const {setting} = open();
-        expect(setting.items.map((item) => item.title)).toEqual([
+        expect(open().titles()).toEqual([
             labels.takeover,
             labels.takeoverGesture,
             labels.previewSy,
@@ -131,31 +148,39 @@ describe("openSettingsPanel", () => {
 
     it("移动端不渲染手势选项", () => {
         __setFrontend("mobile");
-        const {setting} = open();
-        expect(setting.items.map((item) => item.title)).not.toContain(labels.takeoverGesture);
-        expect(setting.items).toHaveLength(16);
+        const {titles} = open();
+        expect(titles()).not.toContain(labels.takeoverGesture);
+        expect(titles()).toHaveLength(16);
     });
 
     it("移动端与独立窗口不渲染形态选项", () => {
         __setFrontend("mobile");
-        expect(open().setting.items.map((item) => item.title)).not.toContain(labels.desktopForm);
+        expect(open().titles()).not.toContain(labels.desktopForm);
         __setFrontend("desktop-window");
-        expect(open().setting.items.map((item) => item.title)).not.toContain(labels.desktopForm);
+        expect(open().titles()).not.toContain(labels.desktopForm);
+    });
+
+    it("打开期间不聚焦任何输入控件", () => {
+        // 移动端宿主重写过 HTMLElement.prototype.focus，落到可输入控件上就会调起软键盘
+        const focus = vi.spyOn(HTMLElement.prototype, "focus");
+        open();
+        expect(focus).not.toHaveBeenCalled();
     });
 
     it("改形态会写进保存的设置，但仍不改任何东西直到点保存", () => {
-        const {control, onSave} = open({desktopForm: "tab"});
+        const {control, save, onSave} = open({desktopForm: "tab"});
         const select = control(labels.desktopForm) as HTMLSelectElement;
         expect(select.value).toBe("tab");
         choose(select, "dialog");
         expect(onSave).not.toHaveBeenCalled();
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({desktopForm: "dialog"}));
     });
 
     it("扩展名项占整行", () => {
-        const {setting} = open();
-        expect(setting.items.find((item) => item.title === labels.extensions)?.direction).toBe("row");
+        const {row} = open();
+        expect(row(labels.extensions).firstElementChild?.className).toContain("fn__block");
+        expect(row(labels.maxSize).firstElementChild?.className).toContain("fn__flex-1");
     });
 
     it("控件使用思源的控件类名", () => {
@@ -167,23 +192,23 @@ describe("openSettingsPanel", () => {
     });
 
     it("接管开关：关掉即 none，再打开回到 click", () => {
-        const {control, onSave} = open({takeover: "altClick"});
-        const input = control(labels.takeover) as HTMLInputElement;
+        const {control, save, onSave} = open({takeover: "altClick"});
+        const input = control(labels.takeover);
         toggle(input, false);
-        Setting.instances[Setting.instances.length - 1].confirm();
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({takeover: "none"}));
 
         toggle(input, true);
-        Setting.instances[Setting.instances.length - 1].confirm();
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({takeover: "click"}));
     });
 
     it("接管开关：本来就是 none 时打开回到 click", () => {
-        const {control, onSave} = open({takeover: "none"});
+        const {control, save, onSave} = open({takeover: "none"});
         const input = control(labels.takeover) as HTMLInputElement;
         expect(input.checked).toBe(false);
         toggle(input, true);
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({takeover: "click"}));
     });
 
@@ -196,14 +221,14 @@ describe("openSettingsPanel", () => {
     });
 
     it("手势下拉改值后保存进草稿", () => {
-        const {control, onSave} = open();
+        const {control, save, onSave} = open();
         choose(control(labels.takeoverGesture), "ctrlClick");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({takeover: "ctrlClick"}));
     });
 
     it("布尔开关逐项写入草稿", () => {
-        const {control, onSave} = open({
+        const {control, save, onSave} = open({
             previewSy: false,
             codeBlockMenu: true,
             confirmOnClose: true,
@@ -219,7 +244,7 @@ describe("openSettingsPanel", () => {
         toggle(control(labels.restoreCursor), false);
         toggle(control(labels.autocomplete), false);
         toggle(control(labels.debugMode), true);
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
             previewSy: true,
             codeBlockMenu: false,
@@ -232,7 +257,7 @@ describe("openSettingsPanel", () => {
     });
 
     it("扩展名文本域写入草稿，恢复默认按钮同时更新文本域", () => {
-        const {control, onSave} = open();
+        const {control, save, onSave} = open();
         const wrapper = control(labels.extensions);
         const textarea = wrapper.querySelector("textarea") as HTMLTextAreaElement;
         const reset = wrapper.querySelector("button") as HTMLButtonElement;
@@ -241,45 +266,45 @@ describe("openSettingsPanel", () => {
         type(textarea, "txt\nmd");
         reset.click();
         expect(textarea.value).toBe(DEFAULT_EXTENSIONS);
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({extensions: DEFAULT_EXTENSIONS}));
     });
 
     it("扩展名文本域修改后保存", () => {
-        const {control, onSave} = open();
+        const {control, save, onSave} = open();
         type(control(labels.extensions).querySelector("textarea")!, "txt\nmd");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({extensions: "txt\nmd"}));
     });
 
     it("大小上限只接受正数", () => {
-        const {control, onSave} = open({maxSizeMB: 5});
+        const {control, save, onSave} = open({maxSizeMB: 5});
         const wrapper = control(labels.maxSize);
-        expect(wrapper.className).toBe("editor-siyuan-settings__number");
+        expect(wrapper.className).toContain("editor-siyuan-settings__number");
         const input = wrapper.querySelector("input") as HTMLInputElement;
         expect(input.type).toBe("number");
         expect(input.min).toBe("0.1");
         expect(input.step).toBe("0.1");
 
         type(input, "8.5");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({maxSizeMB: 8.5}));
 
         type(input, "0");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({maxSizeMB: 8.5}));
 
         type(input, "abc");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({maxSizeMB: 8.5}));
     });
 
     it("打开模式下拉", () => {
-        const {control, onSave} = open({openMode: "edit"});
+        const {control, save, onSave} = open({openMode: "edit"});
         const select = control(labels.openMode) as HTMLSelectElement;
         expect(Array.from(select.options).map((option) => option.value)).toEqual(["edit", "preview"]);
         choose(select, "preview");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({openMode: "preview"}));
     });
 
@@ -297,11 +322,11 @@ describe("openSettingsPanel", () => {
     });
 
     it("三个下拉改值后写入草稿", () => {
-        const {control, onSave} = open();
+        const {control, save, onSave} = open();
         choose(control(labels.lineNumbers), "auto");
         choose(control(labels.lineWrap), "off");
         choose(control(labels.ligatures), "on");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
             lineNumbers: "auto",
             lineWrap: "off",
@@ -310,28 +335,28 @@ describe("openSettingsPanel", () => {
     });
 
     it("字号只接受正数，留空跟随思源", () => {
-        const {control, onSave} = open({fontSize: 0});
+        const {control, save, onSave} = open({fontSize: 0});
         const wrapper = control(labels.fontSize);
-        expect(wrapper.className).toBe("editor-siyuan-settings__number");
+        expect(wrapper.className).toContain("editor-siyuan-settings__number");
         const input = wrapper.querySelector("input") as HTMLInputElement;
         expect(input.type).toBe("number");
         expect(input.value).toBe("");
         expect(input.placeholder).toBe(labels.followSiYuan);
 
         type(input, "18");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 18}));
 
         type(input, "0");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 0}));
 
         type(input, "200");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 72}));
 
         type(input, "abc");
-        settingConfirm(onSave);
+        save();
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 0}));
     });
 
@@ -349,21 +374,35 @@ describe("openSettingsPanel", () => {
         expect(button.textContent).toBe("清除 0 条");
     });
 
-    it("确认时传出的是一份拷贝，之后的改动不会影响它", () => {
+    it("取消不保存", () => {
+        const {control, cancel, onSave} = open();
+        toggle(control(labels.debugMode), true);
+        cancel();
+        expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it("单行输入框里回车等于点保存，文本域里回车是换行", () => {
         const {control, onSave} = open();
+        const input = control(labels.maxSize).querySelector("input")!;
+        type(input, "8");
+        input.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+        expect(onSave).toHaveBeenCalledWith(expect.objectContaining({maxSizeMB: 8}));
+
+        onSave.mockClear();
+        const textarea = control(labels.extensions).querySelector("textarea")!;
+        textarea.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+        expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it("确认时传出的是一份拷贝，之后的改动不会影响它", () => {
+        const {control, save, onSave} = open();
         const button = control(labels.forget) as HTMLButtonElement;
         button.click();
         type(control(labels.extensions).querySelector("textarea")!, "txt");
-        settingConfirm(onSave);
+        save();
         const saved = onSave.mock.calls[0][0];
         expect(saved.extensions).toBe("txt");
         type(control(labels.extensions).querySelector("textarea")!, "md");
         expect(saved.extensions).toBe("txt");
     });
 });
-
-/** 取最近一个面板并触发保存。 */
-function settingConfirm(onSave: ReturnType<typeof vi.fn>): void {
-    Setting.instances[Setting.instances.length - 1].confirm();
-    expect(onSave).toHaveBeenCalled();
-}

@@ -335,6 +335,13 @@
 }
 
 // ---- 设置面板 ----
+// 面板是插件自己拼的 Dialog（见 settings-panel.ts）。容器常驻 will-change: transform，
+// 让入场那段 scale / opacity 过渡结束后合成层不被丢掉：层一销毁，App 的 WebView 只能提交
+// 层不存在时的旧纹理，整屏就是那一帧旧画面。与 translateY 抽屉预热图层的道理相同。
+.b3-dialog__container.editor-siyuan-settings {
+  will-change: transform;
+}
+
 .editor-siyuan-settings__stack {
   gap: 8px;
   width: 100%;
@@ -347,8 +354,7 @@
   }
 }
 
-// 数字输入框外面那层：宿主只给 INPUT/TEXTAREA 挂 bindInput（会 focus），包一层就不会在移动端
-// 自动聚焦、弹键盘。宿主给这层加的是 fn__size200（200px），里面那个输入框撑满它。
+// 数字输入框外面那层：面板给这一行挂的是 fn__size200（200px），里面那个输入框撑满它。
 .editor-siyuan-settings__number .b3-text-field {
   width: 100%;
 }

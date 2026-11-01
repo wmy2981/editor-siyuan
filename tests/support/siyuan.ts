@@ -194,41 +194,6 @@ export class Dialog {
     }
 }
 
-export class Setting {
-    static readonly instances: Setting[] = [];
-
-    readonly element = document.createElement("div");
-    readonly items: Array<Record<string, any>> = [];
-    /** 面板标题 → 控件，方便测试直接操作。 */
-    readonly controls = new Map<string, HTMLElement>();
-    opened = false;
-    title: string | undefined;
-
-    constructor(readonly options: {confirmCallback?: () => void}) {
-        Setting.instances.push(this);
-    }
-
-    addItem(item: Record<string, any>): HTMLElement | undefined {
-        this.items.push(item);
-        const control = item.actionElement ?? item.createActionElement?.();
-        if (control) {
-            this.controls.set(item.title, control);
-            this.element.append(control);
-        }
-        return control;
-    }
-
-    open(title?: string): void {
-        this.opened = true;
-        this.title = title;
-    }
-
-    /** 模拟点「保存」：Setting 的 confirmCallback 语义。 */
-    confirm(): void {
-        this.options.confirmCallback?.();
-    }
-}
-
 export const openTab = vi.fn(async (_options?: Record<string, unknown>) => ({}));
 
 let activeTab: Record<string, any> | undefined;
@@ -256,7 +221,6 @@ export function resetSiyuanMock(): void {
     Plugin.instances.length = 0;
     Menu.instances.length = 0;
     Dialog.instances.length = 0;
-    Setting.instances.length = 0;
     activeTab = undefined;
     frontend = "desktop";
 }

@@ -15,6 +15,7 @@
 // 而不是靠 !important 或插入顺序。
 
 @use "./schemes/vscode";
+@use "./schemes/github";
 @use "./schemes/scope";
 
 .editor-siyuan {

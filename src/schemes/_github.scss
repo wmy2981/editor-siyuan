@@ -1,0 +1,56 @@
+// GitHub 配色方案。
+//
+// 取值来自 GitHub 自己那套 PrettyLights token 色（light / dark 各一组），也就是
+// prettylights-syntax-keyword / -entity / -constant / -string / -variable / -comment /
+// -entity-tag / -markup-heading 这些 GitHub 页面上同名变量的颜色。
+//
+// 与思源自带的 github / github-dark 代码块主题相比，这里补齐了那份主题明确写成
+// 「purposely ignored」的几类：char.escape、link、params、property、punctuation、tag，
+// 以及 title.function_ / title.class_ / variable.language_ 这些次级 scope，
+// 所以同一段代码的颜色分层比代码块更细。
+//
+// 与 _vscode.scss 一样只换 token 色，深浅由 data-theme-mode 决定。
+
+.editor-siyuan[data-highlight="github"] {
+    --editor-siyuan-hl-text: #24292e;
+    --editor-siyuan-hl-comment: #6a737d;
+    --editor-siyuan-hl-string: #032f62;
+    --editor-siyuan-hl-number: #005cc5;
+    --editor-siyuan-hl-keyword: #d73a49;
+    --editor-siyuan-hl-constant: #005cc5;
+    --editor-siyuan-hl-builtin: #e36209;
+    --editor-siyuan-hl-type: #d73a49;
+    --editor-siyuan-hl-class: #6f42c1;
+    --editor-siyuan-hl-function: #6f42c1;
+    --editor-siyuan-hl-variable: #e36209;
+    --editor-siyuan-hl-property: #005cc5;
+    --editor-siyuan-hl-tag: #22863a;
+    --editor-siyuan-hl-meta: #005cc5;
+    --editor-siyuan-hl-regexp: #032f62;
+    --editor-siyuan-hl-escape: #032f62;
+    --editor-siyuan-hl-heading: #005cc5;
+    --editor-siyuan-hl-addition: #22863a;
+    --editor-siyuan-hl-deletion: #b31d28;
+}
+
+:root[data-theme-mode="dark"] .editor-siyuan[data-highlight="github"] {
+    --editor-siyuan-hl-text: #c9d1d9;
+    --editor-siyuan-hl-comment: #8b949e;
+    --editor-siyuan-hl-string: #a5d6ff;
+    --editor-siyuan-hl-number: #79c0ff;
+    --editor-siyuan-hl-keyword: #ff7b72;
+    --editor-siyuan-hl-constant: #79c0ff;
+    --editor-siyuan-hl-builtin: #ffa657;
+    --editor-siyuan-hl-type: #ff7b72;
+    --editor-siyuan-hl-class: #d2a8ff;
+    --editor-siyuan-hl-function: #d2a8ff;
+    --editor-siyuan-hl-variable: #ffa657;
+    --editor-siyuan-hl-property: #79c0ff;
+    --editor-siyuan-hl-tag: #7ee787;
+    --editor-siyuan-hl-meta: #79c0ff;
+    --editor-siyuan-hl-regexp: #a5d6ff;
+    --editor-siyuan-hl-escape: #a5d6ff;
+    --editor-siyuan-hl-heading: #1f6feb;
+    --editor-siyuan-hl-addition: #aff5b4;
+    --editor-siyuan-hl-deletion: #ffdcd7;
+}

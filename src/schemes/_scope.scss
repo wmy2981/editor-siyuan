@@ -60,15 +60,20 @@ $content: ".editor-siyuan[data-highlight] .cm-content";
     color: var(--editor-siyuan-hl-keyword);
 }
 
-// 常量、内建值、列表符号、公式
-#{$content} .hljs-literal,
+// 字面量：Go 的 nil / true / false / iota、Python 的 True / None、JS 的 null。
+// 各平台把它归到 constant.language，与普通常量分开着色
+#{$content} .hljs-literal {
+    color: var(--editor-siyuan-hl-literal);
+}
+
+// 常量、列表符号、公式
 #{$content} .hljs-variable.constant_,
 #{$content} .hljs-bullet,
 #{$content} .hljs-formula {
     color: var(--editor-siyuan-hl-constant);
 }
 
-// 内建对象与符号常量（console、print、:sym）
+// 内建对象与内建函数（Go 的 make / append、JS 的 console），以及符号常量（:sym）
 #{$content} .hljs-built_in,
 #{$content} .hljs-symbol {
     color: var(--editor-siyuan-hl-builtin);

@@ -10,6 +10,9 @@
 // 所以同一段代码的颜色分层比代码块更细。
 //
 // 与 _vscode.scss 一样只换 token 色，深浅由 data-theme-mode 决定。
+//
+// built_in 取蓝色而不是变量色：GitHub 的色板里 support.*（内建函数、内建类型、类）都走
+// prettylights 的 constant 色，页面上也确实把 make、Fprintf 这类调用染成 pl-c1。
 
 .editor-siyuan[data-highlight="github"] {
     --editor-siyuan-hl-text: #24292e;
@@ -17,8 +20,9 @@
     --editor-siyuan-hl-string: #032f62;
     --editor-siyuan-hl-number: #005cc5;
     --editor-siyuan-hl-keyword: #d73a49;
+    --editor-siyuan-hl-literal: #005cc5;
     --editor-siyuan-hl-constant: #005cc5;
-    --editor-siyuan-hl-builtin: #e36209;
+    --editor-siyuan-hl-builtin: #005cc5;
     --editor-siyuan-hl-type: #d73a49;
     --editor-siyuan-hl-class: #6f42c1;
     --editor-siyuan-hl-function: #6f42c1;
@@ -39,8 +43,9 @@
     --editor-siyuan-hl-string: #a5d6ff;
     --editor-siyuan-hl-number: #79c0ff;
     --editor-siyuan-hl-keyword: #ff7b72;
+    --editor-siyuan-hl-literal: #79c0ff;
     --editor-siyuan-hl-constant: #79c0ff;
-    --editor-siyuan-hl-builtin: #ffa657;
+    --editor-siyuan-hl-builtin: #79c0ff;
     --editor-siyuan-hl-type: #ff7b72;
     --editor-siyuan-hl-class: #d2a8ff;
     --editor-siyuan-hl-function: #d2a8ff;

@@ -48,6 +48,7 @@ const BY_EXTENSION: Record<string, string> = {
     ".jsx": "javascript",
     ".ts": "typescript",
     ".tsx": "typescript",
+    ".mts": "typescript",
     ".vue": "xml",
     ".svelte": "xml",
     ".py": "python",

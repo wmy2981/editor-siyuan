@@ -14,6 +14,7 @@ import {
     forgetMemories,
     hasAllowedExtension,
     initStore,
+    needsExtensionMigration,
     normalizeSettings,
     parseExtensions,
     putStash,
@@ -45,6 +46,7 @@ describe("normalizeSettings", () => {
         const settings = normalizeSettings({
             takeover: "altClick",
             extensions: "txt\nmd",
+            extensionsVersion: 1,
             maxSizeMB: 8.5,
             confirmOnClose: false,
             stashUnsaved: false,
@@ -64,6 +66,7 @@ describe("normalizeSettings", () => {
         expect(settings).toEqual({
             takeover: "altClick",
             extensions: "txt\nmd",
+            extensionsVersion: 1,
             maxSizeMB: 8.5,
             confirmOnClose: false,
             stashUnsaved: false,
@@ -156,6 +159,43 @@ describe("normalizeSettings", () => {
         const settings = normalizeSettings({unknown: "x"} as any);
         expect(settings).toEqual(DEFAULT_SETTINGS);
         expect("unknown" in settings).toBe(false);
+    });
+});
+
+describe("内建扩展名的补齐", () => {
+    it("旧设置（没有版本号）补上新增的 mjs 与 mts", () => {
+        expect(normalizeSettings({extensions: "txt\nmd"}).extensions).toBe("txt\nmd\nmjs\nmts");
+    });
+
+    it("已经有这两项时不重复追加", () => {
+        expect(normalizeSettings({extensions: "mjs\nts\n.mts"}).extensions).toBe("mjs\nts\n.mts");
+    });
+
+    it("版本已是当前值时不动用户列表", () => {
+        const settings = normalizeSettings({extensions: "txt\nmd", extensionsVersion: 1});
+        expect(settings.extensions).toBe("txt\nmd");
+        expect(settings.extensionsVersion).toBe(1);
+    });
+
+    it("空列表是用户清空的，不擅自恢复", () => {
+        expect(normalizeSettings({extensions: "   "}).extensions).toBe("   ");
+    });
+
+    it("默认列表本身已含 mjs 与 mts", () => {
+        const parsed = parseExtensions(DEFAULT_EXTENSIONS);
+        expect(parsed.has(".mjs")).toBe(true);
+        expect(parsed.has(".mts")).toBe(true);
+        expect(normalizeSettings(undefined).extensions).toBe(DEFAULT_EXTENSIONS);
+    });
+
+    it("needsExtensionMigration 只对旧设置返回 true", () => {
+        expect(needsExtensionMigration(undefined)).toBe(false);
+        expect(needsExtensionMigration(null)).toBe(false);
+        expect(needsExtensionMigration("text")).toBe(false);
+        expect(needsExtensionMigration({})).toBe(true);
+        expect(needsExtensionMigration({extensions: "txt"})).toBe(true);
+        expect(needsExtensionMigration({extensionsVersion: 1})).toBe(false);
+        expect(needsExtensionMigration({extensionsVersion: 2})).toBe(false);
     });
 });
 

@@ -34,6 +34,7 @@ describe("guessLanguage", () => {
             ["assets/a.jsx", "javascript"],
             ["assets/a.ts", "typescript"],
             ["assets/a.tsx", "typescript"],
+            ["assets/a.mts", "typescript"],
             ["assets/a.py", "python"],
             ["assets/a.rb", "ruby"],
             ["assets/a.go", "go"],

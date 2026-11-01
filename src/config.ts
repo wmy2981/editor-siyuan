@@ -40,6 +40,13 @@ export interface Settings {
     takeover: TTakeover;
     /** 扩展名白名单的文本域原文，一行一个，也接受逗号、分号或空格分隔。 */
     extensions: string;
+    /**
+     * 白名单用到的内建扩展名版本。
+     *
+     * 每新增一批内建支持的扩展名就加一；加载到旧版本的设置时，把这一批一次性追加进用户
+     * 已有的列表里再落盘。加了版本号才不会在用户主动删掉某个扩展名后每次启动又塞回去。
+     */
+    extensionsVersion: number;
     /** 单个文件的大小上限，单位 MB。 */
     maxSizeMB: number;
     /** 关闭页签前有未保存改动时先确认。 */
@@ -80,6 +87,19 @@ export interface Settings {
 }
 
 /**
+ * 内建扩展名版本。
+ *
+ * 每新增一批内建支持的扩展名就把这里加一，并在 EXTENSION_ADDITIONS 里记下这一批：
+ * 加载到旧版本的设置时把这些名字追加进用户的列表，随后立刻落盘。
+ */
+const EXTENSIONS_VERSION = 1;
+
+/** 各版本新增的内建扩展名，只补用户列表里没有的那些。 */
+const EXTENSION_ADDITIONS: Record<number, string[]> = {
+    1: ["mjs", "mts"],
+};
+
+/**
  * 默认白名单。
  *
  * 取思源自己的资源可检索扩展名（`Constants.SIYUAN_ASSETS_SEARCH`）为底，
@@ -90,7 +110,7 @@ export const DEFAULT_EXTENSIONS = [
     "json", "jsonc", "json5", "yaml", "yml", "toml", "ini", "cfg", "conf", "env", "properties",
     "csv", "tsv", "log",
     "xml", "html", "htm", "css", "scss", "sass", "less",
-    "js", "mjs", "cjs", "jsx", "ts", "tsx", "vue", "svelte",
+    "js", "mjs", "cjs", "jsx", "ts", "tsx", "mts", "vue", "svelte",
     "py", "rb", "php", "go", "rs", "java", "kt", "kts", "scala", "dart", "swift",
     "c", "h", "cpp", "cc", "cxx", "hpp", "cs", "m", "mm",
     "sql", "sh", "bash", "zsh", "fish", "ps1", "psd1", "bat", "cmd",
@@ -101,6 +121,7 @@ export const DEFAULT_EXTENSIONS = [
 export const DEFAULT_SETTINGS: Settings = {
     takeover: "click",
     extensions: DEFAULT_EXTENSIONS,
+    extensionsVersion: EXTENSIONS_VERSION,
     maxSizeMB: 5,
     confirmOnClose: true,
     stashUnsaved: true,
@@ -131,6 +152,46 @@ export const MAX_FONT_SIZE = 72;
 const pick = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
     allowed.find((item) => item === value) ?? fallback;
 
+/**
+ * 把这一版新增的内建扩展名补进用户已有的列表。
+ *
+ * 文本域是用户自己维护的，所以只往末尾追加、不改原有条目的顺序与写法；列表被清空过
+ * （空字符串表示一个文件都不接管）时原样返回，不擅自恢复。
+ */
+function migrateExtensions(raw: unknown, rawVersion: unknown): string {
+    const text = typeof raw === "string" ? raw : DEFAULT_EXTENSIONS;
+    if (text.trim() === "") {
+        return text;
+    }
+    const version = Number(rawVersion);
+    const from = Number.isFinite(version) ? version : 0;
+    const additions = Object.entries(EXTENSION_ADDITIONS)
+        .filter(([at]) => Number(at) > from)
+        .flatMap(([, names]) => names);
+    if (additions.length === 0) {
+        return text;
+    }
+    const present = parseExtensions(text);
+    const missing = additions.filter((name) => !present.has(`.${name}`));
+    if (missing.length === 0) {
+        return text;
+    }
+    return `${text.replace(/\s+$/, "")}\n${missing.join("\n")}`;
+}
+
+/**
+ * 加载到的设置是否需要补扩展名。
+ *
+ * 没有设置文件（首次安装）时不需要：默认列表本身就含全部内建扩展名。
+ */
+export function needsExtensionMigration(raw: unknown): boolean {
+    if (raw === null || typeof raw !== "object") {
+        return false;
+    }
+    const version = Number((raw as {extensionsVersion?: unknown}).extensionsVersion);
+    return !Number.isFinite(version) || version < EXTENSIONS_VERSION;
+}
+
 /** 把磁盘或设置面板来的任意值收拢成合法设置。 */
 export function normalizeSettings(raw: unknown): Settings {
     const source = (raw ?? {}) as Partial<Record<keyof Settings, unknown>>;
@@ -138,7 +199,8 @@ export function normalizeSettings(raw: unknown): Settings {
     const fontSize = Number(source.fontSize);
     return {
         takeover: pick(source.takeover, TAKEOVERS, DEFAULT_SETTINGS.takeover),
-        extensions: typeof source.extensions === "string" ? source.extensions : DEFAULT_SETTINGS.extensions,
+        extensions: migrateExtensions(source.extensions, source.extensionsVersion),
+        extensionsVersion: EXTENSIONS_VERSION,
         maxSizeMB: Number.isFinite(maxSizeMB) && maxSizeMB > 0 ? maxSizeMB : DEFAULT_SETTINGS.maxSizeMB,
         confirmOnClose: source.confirmOnClose !== false,
         stashUnsaved: source.stashUnsaved !== false,

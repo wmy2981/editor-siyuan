@@ -8,7 +8,7 @@
  */
 import {Plugin, showMessage, type Custom} from "siyuan";
 import "./index.scss";
-import {DEFAULT_SETTINGS, forgetMemories, initStore, normalizeSettings, SETTINGS_FILE, type Settings} from "./config";
+import {DEFAULT_SETTINGS, forgetMemories, initStore, needsExtensionMigration, normalizeSettings, SETTINGS_FILE, type Settings} from "./config";
 import {debug, setDebug} from "./debug";
 import {ICONS} from "./icons";
 import {makeT, type T} from "./i18n";
@@ -39,6 +39,13 @@ export default class EditorPlugin extends Plugin {
             stored = undefined;
         }
         this.settings = normalizeSettings(stored);
+        // 旧版本的设置里存的是当时的默认白名单：新内建支持的扩展名已在 normalize 时补进
+        // this.settings，这里落盘一次，之后用户自己删掉的条目就不会被再塞回来
+        if (needsExtensionMigration(stored)) {
+            void this.saveData(SETTINGS_FILE, this.settings).catch(() => {
+                // 只读模式下写不进去，下次启动再补一次即可
+            });
+        }
         setDebug(this.settings.debug);
         debug("loaded", {
             plugin: this.name,

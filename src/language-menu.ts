@@ -6,6 +6,7 @@
  * 直接列出来太长。筛选列表的写法取自思源 AI 设置里选模型的那个下拉。
  */
 import {Menu} from "siyuan";
+import {isMobileFrontend} from "./frontend";
 import {availableLanguages} from "./language";
 import {escapeHtml} from "./util";
 import type {T} from "./i18n";
@@ -106,5 +107,10 @@ export function openLanguageMenu(anchor: HTMLElement, current: string, t: T, onP
     // 语言名长短不一，给一个下限免得菜单被最短的那一项决定宽度。
     menu.element.style.boxSizing = "border-box";
     menu.element.style.width = `${Math.max(rect.width, 260)}px`;
-    element.querySelector<HTMLInputElement>("input")?.focus();
+    // 移动端不把焦点放进搜索框：菜单在手机上就是底部抽屉，入场期间聚焦输入框会让宿主的
+    // focus 包装调 JSAndroid.showKeyboard()，键盘一弹触发的 adjustResize 会改 WebView 高度、
+    // 整页重排。手机上没有物理键盘，少这一次自动聚焦不耽误事，点一下搜索框再输入即可。
+    if (!isMobileFrontend()) {
+        element.querySelector<HTMLInputElement>("input")?.focus();
+    }
 }

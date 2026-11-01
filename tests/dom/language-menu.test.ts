@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {Menu} from "../support/siyuan";
+import {Menu, __setFrontend} from "../support/siyuan";
 import {installHljs} from "../support/env";
 import {makeT} from "../../src/i18n";
 import {openLanguageMenu} from "../../src/language-menu";
@@ -53,6 +53,13 @@ describe("openLanguageMenu", () => {
         const focus = vi.spyOn(HTMLInputElement.prototype, "focus");
         open();
         expect(focus).toHaveBeenCalled();
+    });
+
+    it("移动端不自动聚焦输入框", () => {
+        __setFrontend("mobile");
+        const focus = vi.spyOn(HTMLInputElement.prototype, "focus");
+        open();
+        expect(focus).not.toHaveBeenCalled();
     });
 
     it("按锚点位置打开，并给菜单一个最小宽度", () => {

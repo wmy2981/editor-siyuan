@@ -1,0 +1,56 @@
+// VS Code 配色方案。
+//
+// 取值来自 VS Code 默认的两套主题：Light+ 与 Dark+
+// （microsoft/vscode 的 extensions/theme-defaults/themes/light_plus.json 与 dark_plus.json，
+// 二者都 include 同目录的 light_vs.json / dark_vs.json）。
+//
+// 只换 token 色，不动底色：底色仍然归思源的 --b3-theme-background。两套色板本来就是
+// 为近白与深灰底各设计一版，思源的浅色与深色主题落在同一区间，因此没有必要在插件里再造
+// 一层底色，操作条、行号列、搜索面板也不必跟着调色。
+//
+// 深浅色由思源写在 <html> 上的 data-theme-mode 决定：没有 JS 参与，用户切换外观时
+// 下一帧就是新配色。选择器权重见 schemes/_scope.scss。
+
+.editor-siyuan[data-highlight="vscode"] {
+    --editor-siyuan-hl-text: #000000;
+    --editor-siyuan-hl-comment: #008000;
+    --editor-siyuan-hl-string: #a31515;
+    --editor-siyuan-hl-number: #098658;
+    --editor-siyuan-hl-keyword: #0000ff;
+    --editor-siyuan-hl-constant: #0070c1;
+    --editor-siyuan-hl-builtin: #795e26;
+    --editor-siyuan-hl-type: #267f99;
+    --editor-siyuan-hl-class: #267f99;
+    --editor-siyuan-hl-function: #795e26;
+    --editor-siyuan-hl-variable: #001080;
+    --editor-siyuan-hl-property: #001080;
+    --editor-siyuan-hl-tag: #800000;
+    --editor-siyuan-hl-meta: #af00db;
+    --editor-siyuan-hl-regexp: #811f3f;
+    --editor-siyuan-hl-escape: #ee0000;
+    --editor-siyuan-hl-heading: #800000;
+    --editor-siyuan-hl-addition: #587c0c;
+    --editor-siyuan-hl-deletion: #ad0707;
+}
+
+:root[data-theme-mode="dark"] .editor-siyuan[data-highlight="vscode"] {
+    --editor-siyuan-hl-text: #d4d4d4;
+    --editor-siyuan-hl-comment: #6a9955;
+    --editor-siyuan-hl-string: #ce9178;
+    --editor-siyuan-hl-number: #b5cea8;
+    --editor-siyuan-hl-keyword: #569cd6;
+    --editor-siyuan-hl-constant: #4fc1ff;
+    --editor-siyuan-hl-builtin: #dcdcaa;
+    --editor-siyuan-hl-type: #4ec9b0;
+    --editor-siyuan-hl-class: #4ec9b0;
+    --editor-siyuan-hl-function: #dcdcaa;
+    --editor-siyuan-hl-variable: #9cdcfe;
+    --editor-siyuan-hl-property: #9cdcfe;
+    --editor-siyuan-hl-tag: #569cd6;
+    --editor-siyuan-hl-meta: #c586c0;
+    --editor-siyuan-hl-regexp: #d16969;
+    --editor-siyuan-hl-escape: #d7ba7d;
+    --editor-siyuan-hl-heading: #569cd6;
+    --editor-siyuan-hl-addition: #9bb955;
+    --editor-siyuan-hl-deletion: #c74e39;
+}

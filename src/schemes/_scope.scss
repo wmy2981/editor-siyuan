@@ -1,0 +1,155 @@
+// 语法配色的 scope 映射，两套方案共用。
+//
+// 这里只把 hljs 的 scope 归到一组语义色变量上，具体色值在 _vscode.scss / _github.scss 里。
+// 两套方案共用一份映射的代价是有些平台差异拿不到（见文件末尾的说明），换来的是加第三套
+// 方案时只需再写一组变量。
+//
+// 类名由 editor.ts 的 scopeToClass 产出，与 hljs 把 token 树渲染成 HTML 时的类名逐字一致：
+// scope 里的点展开成多个类（`title.function` → `hljs-title function_`），所以次级 scope
+// 用复合类名选择器（`.hljs-title.function_`）选中，权重比只写 `.hljs-title` 高一级，压得住上一层。
+//
+// 权重：`.editor-siyuan[data-highlight] .cm-content .hljs-x` 是 0,4,0。要压的是思源那份
+// 全局代码块主题（0,1,0，而且插在 #pluginsStyle 之前）与 CodeMirror 基础主题（0,2,0），
+// 所以不用 !important，也不靠插入顺序。方案色全部写在带 .editor-siyuan 祖先的选择器里，
+// 思源自己的代码块不会受影响。
+//
+// data-highlight 只在插件方案下存在（view.ts 在「跟随思源」时把属性删掉），因此下面所有
+// 规则对「跟随思源」都不生效。
+//
+// scope 清单按 hljs 11 的官方 scope 表逐条列。没有列到的（operator、punctuation、subst、
+// tag 本身、language:xxx 围栏等）继承 --editor-siyuan-hl-text，与各平台「普通标点不着色」
+// 的做法一致。另有两处引擎的粒度上限，不是漏写：
+// - hljs 不区分声明关键字与控制流关键字（`if` 与 `const` 都是 hljs-keyword），关键字只有一档色；
+// - hljs 没有 TextMate 的语义 token，`attr` 同时覆盖 HTML 属性名、JSON 键与 ini 键，
+//   这里统一按属性处理。
+
+$content: ".editor-siyuan[data-highlight] .cm-content";
+
+// 正文基准色：没有被下面任何一条命中的 token 继承它。
+.editor-siyuan[data-highlight] .cm-editor .cm-scroller {
+    color: var(--editor-siyuan-hl-text);
+}
+
+// 注释、引用、注释里的文档标记
+#{$content} .hljs-comment,
+#{$content} .hljs-quote,
+#{$content} .hljs-doctag {
+    color: var(--editor-siyuan-hl-comment);
+}
+
+// 字符串、行内代码、链接
+#{$content} .hljs-string,
+#{$content} .hljs-code,
+#{$content} .hljs-link {
+    color: var(--editor-siyuan-hl-string);
+}
+
+#{$content} .hljs-link {
+    text-decoration: underline;
+}
+
+// 数字
+#{$content} .hljs-number {
+    color: var(--editor-siyuan-hl-number);
+}
+
+// 关键字、模板标签，以及 this / self / super 这类语言内建的变量
+#{$content} .hljs-keyword,
+#{$content} .hljs-template-tag,
+#{$content} .hljs-variable.language_ {
+    color: var(--editor-siyuan-hl-keyword);
+}
+
+// 常量、内建值、列表符号、公式
+#{$content} .hljs-literal,
+#{$content} .hljs-variable.constant_,
+#{$content} .hljs-bullet,
+#{$content} .hljs-formula {
+    color: var(--editor-siyuan-hl-constant);
+}
+
+// 内建对象与符号常量（console、print、:sym）
+#{$content} .hljs-built_in,
+#{$content} .hljs-symbol {
+    color: var(--editor-siyuan-hl-builtin);
+}
+
+// 类型
+#{$content} .hljs-type {
+    color: var(--editor-siyuan-hl-type);
+}
+
+// 类名（含继承的父类）
+#{$content} .hljs-title.class_,
+#{$content} .hljs-title.class_.inherited__ {
+    color: var(--editor-siyuan-hl-class);
+}
+
+// 函数名（声明与调用）
+#{$content} .hljs-title,
+#{$content} .hljs-title.function_,
+#{$content} .hljs-title.function_.invoke__ {
+    color: var(--editor-siyuan-hl-function);
+}
+
+// 变量、形参、模板变量
+#{$content} .hljs-variable,
+#{$content} .hljs-params,
+#{$content} .hljs-template-variable {
+    color: var(--editor-siyuan-hl-variable);
+}
+
+// 属性名：HTML 特性、JSON 键、CSS 属性与选择器
+#{$content} .hljs-attr,
+#{$content} .hljs-attribute,
+#{$content} .hljs-property,
+#{$content} .hljs-selector-id,
+#{$content} .hljs-selector-class,
+#{$content} .hljs-selector-attr,
+#{$content} .hljs-selector-pseudo {
+    color: var(--editor-siyuan-hl-property);
+}
+
+// 标签名与 CSS 的标签选择器
+#{$content} .hljs-name,
+#{$content} .hljs-selector-tag {
+    color: var(--editor-siyuan-hl-tag);
+}
+
+// 元信息：预处理指令、注解、shell 提示符
+#{$content} .hljs-meta {
+    color: var(--editor-siyuan-hl-meta);
+}
+
+// 正则与转义字符
+#{$content} .hljs-regexp {
+    color: var(--editor-siyuan-hl-regexp);
+}
+
+#{$content} .hljs-char.escape_ {
+    color: var(--editor-siyuan-hl-escape);
+}
+
+// 配置文件的节标题与 Markdown 标题
+#{$content} .hljs-section {
+    color: var(--editor-siyuan-hl-heading);
+    font-weight: bold;
+}
+
+// diff 的增删行
+#{$content} .hljs-addition {
+    color: var(--editor-siyuan-hl-addition);
+}
+
+#{$content} .hljs-deletion {
+    color: var(--editor-siyuan-hl-deletion);
+}
+
+// 强调与加粗只改字形，颜色仍归正文
+#{$content} .hljs-emphasis {
+    font-style: italic;
+}
+
+#{$content} .hljs-strong {
+    font-weight: bold;
+}

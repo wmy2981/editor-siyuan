@@ -5,13 +5,17 @@
 // 所以背景取思源编辑器的背景色（--b3-theme-background，深色浅色模式各用各的），
 // 顶部用一条独立操作条而不是浮层。字体、字号、分隔线、悬停色全部走思源的 CSS 变量。
 //
-// 语法配色仍然复用用户选定的那份 hljs 主题样式表（见 theme.ts），
-// 那些 .hljs-keyword 之类的类名是全局的，不依赖任何祖先类名。
+// 语法配色的两条路：默认复用用户选定的那份 hljs 主题样式表（见 theme.ts），
+// 那些 .hljs-keyword 之类的类名是全局的，不依赖任何祖先类名；设置里选了插件自带的方案时，
+// 由根元素上的 data-highlight 切到 schemes/ 里的色板。
 //
 // 选择器权重说明：CodeMirror 的基础主题经 buildTheme 处理后每条规则都是
 // `.ͼN .sel`（两个类，0,2,0），并且它的 <style> 是在创建编辑器时才插进 head 的，
 // 也就是排在插件样式之后。所以这里一律用「三个类」的选择器（0,3,0）压过它，
 // 而不是靠 !important 或插入顺序。
+
+@use "./schemes/vscode";
+@use "./schemes/scope";
 
 .editor-siyuan {
   display: flex;

@@ -1,25 +1,21 @@
 /**
  * 设置面板。
  *
- * 面板自己拼 Dialog，不用宿主的 Setting，原因有两个，都在移动端 App 上看得出来：
+ * 面板交给宿主的 Setting：插件只声明每一行（标题、说明、控件），对话框由思源自己拼。
+ * 这样对话框的形态就跟着宿主走——桌面端是居中对话框，移动端是宿主的底部抽屉，高度、
+ * 拖拽、返回键与键盘避让都由思源统一处理，插件不重复实现。
  *
- * - Setting.open() 结尾会把焦点放到面板里第一个 `input, textarea` 上（见宿主
- *   plugin/Setting.ts）。移动端的宿主重写了 HTMLElement.prototype.focus，只要目标是可输入的
- *   控件就调 JSAndroid.showKeyboard()，键盘一弹触发的 adjustResize 会改 WebView 高度、整页重排。
- *   那次 focus 在宿主里，插件关不掉。
- * - Setting 也是先把对话框插进文档，再逐项 insertAdjacentHTML / insertAdjacentElement，
- *   面板的渲染树在入场那一帧里一直在变；容器类名同样没有入口可挂。
+ * 宿主 Setting 顺带提供这些语义，插件不再自己写：底部「取消 / 保存」按钮、单行输入框里
+ * 回车等于点保存、开关整行可点击（开关那一行由宿主包成 label）。
  *
- * 所以这里先把整份 DOM 在文档之外拼好，再一次性交给 Dialog，入场之后不再动渲染树，全程不碰
- * focus。容器上的类名见 index.scss（常驻 will-change: transform，预热图层）。
+ * 面板里改的是一份草稿，点「保存」才落盘；关掉面板（取消、下拉、Esc、返回键）都不落盘。
+ * 每次打开都新建一份 Setting 与一份草稿：Setting 的条目只增不减，控件也在打开时才由
+ * createActionElement 现做，只有重开一份新的才能保证面板显示的是当前设置。
  *
- * 外观仍然全用思源设置页自己的类名：b3-label config-item 是一行、config-name 是标题、
- * b3-label__text 是说明，控件用 b3-switch / b3-select / b3-text-field / b3-button；
- * 底部操作区与宿主一样是 b3-dialog__action + b3-button--cancel / b3-button--text。
- *
- * 面板里改的是一份草稿，点「保存」才落盘。
+ * 移动端的两项处理见 MOBILE_FLICKER：打开期间挡住宿主对可输入控件的自动聚焦（否则弹软
+ * 键盘、整页重排），打开后给容器与滚动正文补常驻的 will-change（见 index.scss）。
  */
-import {Dialog} from "siyuan";
+import {Setting} from "siyuan";
 import {
     DEFAULT_EXTENSIONS,
     MAX_FONT_SIZE,
@@ -45,13 +41,16 @@ export interface ISettingsPanelOptions {
     onForget: () => void;
 }
 
-/** 一行设置：标题、说明与控件。 */
-interface ISettingRow {
-    title: string;
-    description: string;
-    /** 整行都给控件，标题与说明占上面一块。 */
-    wholeRow?: boolean;
-    control: HTMLElement;
+/**
+ * SDK 的类型声明里还没有 `Setting.dialog`，宿主的实现在 open() 之后暴露它。
+ * 只在这里补一个窄类型，不扩散成全局断言；取不到时（更早的宿主）跳过图层提示。
+ */
+type TSettingWithDialog = Setting & {dialog?: {element: HTMLElement}};
+
+/** 下拉里的一个选项。 */
+interface IChoice<V extends string> {
+    value: V;
+    label: string;
 }
 
 function switchControl(checked: boolean, onChange: (value: boolean) => void): HTMLInputElement {
@@ -63,10 +62,10 @@ function switchControl(checked: boolean, onChange: (value: boolean) => void): HT
     return input;
 }
 
-function selectControl(
-    value: string,
-    options: {value: string; label: string}[],
-    onChange: (value: string) => void,
+function selectControl<V extends string>(
+    value: V,
+    options: IChoice<V>[],
+    onChange: (value: V) => void,
 ): HTMLSelectElement {
     const select = document.createElement("select");
     select.className = "b3-select fn__flex-center";
@@ -77,72 +76,65 @@ function selectControl(
         select.append(element);
     }
     select.value = value;
-    select.addEventListener("change", () => onChange(select.value));
+    select.addEventListener("change", () => onChange(select.value as V));
     return select;
 }
 
-/**
- * 拼一行，结构与宿主 Setting.open() 生成的一致。
- *
- * 开关那一行用 label 包起来，点标题也能切换（与宿主同样的做法）；整行的项（文本域）
- * 把控件放进 fn__block 里，标题与说明在上，控件在下。
- */
-function buildRow(row: ISettingRow): HTMLElement {
-    const isSwitch = row.control.classList.contains("b3-switch");
-    const element = document.createElement(isSwitch ? "label" : "div");
-    element.className = row.wholeRow ? "b3-label config-item" : "fn__flex b3-label config-item";
-
-    const title = document.createElement("div");
-    title.className = "config-name";
-    title.textContent = row.title;
-    const description = document.createElement("div");
-    description.className = "b3-label__text";
-    description.textContent = row.description;
-
-    if (row.wholeRow) {
-        const block = document.createElement("div");
-        block.className = "fn__block";
-        const hr = document.createElement("div");
-        hr.className = "fn__hr";
-        row.control.classList.add("fn__block");
-        block.append(title, hr, description, row.control);
-        element.append(block);
-        return element;
-    }
-
-    const block = document.createElement("div");
-    block.className = "fn__flex-1";
-    block.append(title, description);
-    const space = document.createElement("span");
-    space.className = "fn__space";
-    row.control.classList.add("fn__flex-center");
-    if (!isSwitch) {
-        row.control.classList.add("fn__size200");
-    }
-    element.append(block, space, row.control);
-    return element;
+/** 数字输入框；宿主会把它摆在这一行的右端（fn__size200）。 */
+function numberControl(input: HTMLInputElement, onInput: (raw: string) => void): HTMLInputElement {
+    input.type = "number";
+    input.className = "b3-text-field";
+    input.addEventListener("input", () => onInput(input.value));
+    return input;
 }
 
+/**
+ * 打开设置面板。
+ *
+ * 不返回面板对象：关掉的时机与方式由宿主决定，插件只在 confirmCallback 里拿到「已保存」。
+ */
 export function openSettingsPanel(options: ISettingsPanelOptions): void {
     const draft: Settings = {...options.settings};
     const t = options.t;
-    const rows: ISettingRow[] = [];
 
-    rows.push({
-        title: t("takeover"),
-        description: t("takeoverTip"),
-        control: switchControl(draft.takeover !== "none", (checked) => {
-            draft.takeover = checked ? (draft.takeover === "none" ? "click" : draft.takeover) : "none";
-        }),
+    const setting = new Setting({
+        // 只在点「保存」时落盘；宿主的其他关闭路径（取消、下拉、Esc、返回键）不会走到这里
+        confirmCallback: () => {
+            options.onSave({...draft});
+        },
+    });
+
+    const addSwitch = (title: string, description: string, checked: boolean, apply: (value: boolean) => void): void => {
+        setting.addItem({
+            title,
+            description,
+            createActionElement: () => switchControl(checked, apply),
+        });
+    };
+
+    const addSelect = <V extends string>(
+        title: string,
+        description: string,
+        value: V,
+        choices: IChoice<V>[],
+        apply: (value: V) => void,
+    ): void => {
+        setting.addItem({
+            title,
+            description,
+            createActionElement: () => selectControl(value, choices, apply),
+        });
+    };
+
+    addSwitch(t("takeover"), t("takeoverTip"), draft.takeover !== "none", (checked) => {
+        draft.takeover = checked ? (draft.takeover === "none" ? "click" : draft.takeover) : "none";
     });
 
     // 移动端没有修饰键，能谈的只有单击这一种手势，这一项不显示；
     // 桌面端存下的 Alt/Ctrl 单击在移动端也一律按单击处理（见 open.ts）
     if (!isMobileFrontend()) {
-        rows.push({
-            title: t("takeoverGesture"),
-            description: t("takeoverGestureTip"),
-            control: selectControl(draft.takeover === "none" ? "none" : draft.takeover, [
+        addSelect(t("takeoverGesture"), t("takeoverGestureTip"),
+            draft.takeover === "none" ? "none" : draft.takeover, [
                 {value: "click", label: t("gestureClick")},
                 {value: "ctrlClick", label: t("gestureCtrlClick")},
                 {value: "altClick", label: t("gestureAltClick")},
@@ -150,31 +142,23 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
                 {value: "none", label: t("gestureNone")},
             ], (value) => {
                 draft.takeover = value as TTakeover;
-            }),
-        });
+            });
     }
 
-    rows.push({
-        title: t("previewSy"),
-        description: t("previewSyTip"),
-        control: switchControl(draft.previewSy, (checked) => {
-            draft.previewSy = checked;
-        }),
+    addSwitch(t("previewSy"), t("previewSyTip"), draft.previewSy, (checked) => {
+        draft.previewSy = checked;
     });
 
-    rows.push({
-        title: t("codeBlockMenu"),
-        description: t("codeBlockMenuTip"),
-        control: switchControl(draft.codeBlockMenu, (checked) => {
-            draft.codeBlockMenu = checked;
-        }),
+    addSwitch(t("codeBlockMenu"), t("codeBlockMenuTip"), draft.codeBlockMenu, (checked) => {
+        draft.codeBlockMenu = checked;
     });
 
-    rows.push({
+    // 文本域占整行（direction: row），下面再挂一个「恢复默认」按钮
+    setting.addItem({
         title: t("extensions"),
         description: t("extensionsTip"),
-        wholeRow: true,
-        control: (() => {
+        direction: "row",
+        createActionElement: () => {
             const textarea = document.createElement("textarea");
             textarea.className = "b3-text-field";
             textarea.rows = 8;
@@ -194,176 +178,120 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
             wrapper.className = "fn__flex-column editor-siyuan-settings__stack";
             wrapper.append(textarea, reset);
             return wrapper;
-        })(),
+        },
     });
 
-    rows.push({
+    setting.addItem({
         title: t("maxSize"),
         description: t("maxSizeTip"),
-        control: (() => {
+        createActionElement: () => {
             const input = document.createElement("input");
-            input.type = "number";
-            input.className = "b3-text-field";
             input.min = "0.1";
             input.step = "0.1";
             input.value = String(draft.maxSizeMB);
-            input.addEventListener("input", () => {
-                const value = Number(input.value);
+            return numberControl(input, (raw) => {
+                const value = Number(raw);
                 if (Number.isFinite(value) && value > 0) {
                     draft.maxSizeMB = value;
                 }
             });
-            const wrapper = document.createElement("div");
-            wrapper.className = "editor-siyuan-settings__number";
-            wrapper.append(input);
-            return wrapper;
-        })(),
+        },
     });
 
-    rows.push({
-        title: t("confirmOnClose"),
-        description: t("confirmOnCloseTip"),
-        control: switchControl(draft.confirmOnClose, (checked) => {
-            draft.confirmOnClose = checked;
-        }),
+    addSwitch(t("confirmOnClose"), t("confirmOnCloseTip"), draft.confirmOnClose, (checked) => {
+        draft.confirmOnClose = checked;
     });
 
-    rows.push({
-        title: t("stashUnsaved"),
-        description: t("stashUnsavedTip"),
-        control: switchControl(draft.stashUnsaved, (checked) => {
-            draft.stashUnsaved = checked;
-        }),
+    addSwitch(t("stashUnsaved"), t("stashUnsavedTip"), draft.stashUnsaved, (checked) => {
+        draft.stashUnsaved = checked;
     });
 
-    rows.push({
-        title: t("openMode"),
-        description: t("openModeTip"),
-        control: selectControl(draft.openMode, [
-            {value: "edit", label: t("openModeEdit")},
-            {value: "preview", label: t("openModePreview")},
-        ], (value) => {
-            draft.openMode = value as TOpenMode;
-        }),
+    addSelect(t("openMode"), t("openModeTip"), draft.openMode, [
+        {value: "edit", label: t("openModeEdit")},
+        {value: "preview", label: t("openModePreview")},
+    ], (value) => {
+        draft.openMode = value as TOpenMode;
     });
 
     // 形态只在桌面主窗口里可选：移动端没有页签 API，独立窗口里也没有页签栏，
     // 那两处只能是对话框/浮层，给一个改不动的选项只会让人困惑
     if (!isMobileFrontend() && !isSeparateWindow()) {
-        rows.push({
-            title: t("desktopForm"),
-            description: t("desktopFormTip"),
-            control: selectControl(draft.desktopForm, [
-                {value: "tab", label: t("desktopFormTab")},
-                {value: "dialog", label: t("desktopFormDialog")},
-            ], (value) => {
-                draft.desktopForm = value as TDesktopForm;
-            }),
+        addSelect(t("desktopForm"), t("desktopFormTip"), draft.desktopForm, [
+            {value: "tab", label: t("desktopFormTab")},
+            {value: "dialog", label: t("desktopFormDialog")},
+        ], (value) => {
+            draft.desktopForm = value as TDesktopForm;
         });
     }
 
-    rows.push({
-        title: t("lineNumbers"),
-        description: t("lineNumbersTip"),
-        control: selectControl(draft.lineNumbers, [
-            {value: "auto", label: t("followSiYuan")},
-            {value: "show", label: t("lineNumbersShow")},
-            {value: "hide", label: t("disable")},
-        ], (value) => {
-            draft.lineNumbers = value as TLineNumbers;
-        }),
+    addSelect(t("lineNumbers"), t("lineNumbersTip"), draft.lineNumbers, [
+        {value: "auto", label: t("followSiYuan")},
+        {value: "show", label: t("lineNumbersShow")},
+        {value: "hide", label: t("disable")},
+    ], (value) => {
+        draft.lineNumbers = value as TLineNumbers;
     });
 
-    rows.push({
-        title: t("lineWrap"),
-        description: t("lineWrapTip"),
-        control: selectControl(draft.lineWrap, [
-            {value: "auto", label: t("followSiYuan")},
-            {value: "on", label: t("enable")},
-            {value: "off", label: t("disable")},
-        ], (value) => {
-            draft.lineWrap = value as TFollow;
-        }),
+    addSelect(t("lineWrap"), t("lineWrapTip"), draft.lineWrap, [
+        {value: "auto", label: t("followSiYuan")},
+        {value: "on", label: t("enable")},
+        {value: "off", label: t("disable")},
+    ], (value) => {
+        draft.lineWrap = value as TFollow;
     });
 
-    rows.push({
-        title: t("ligatures"),
-        description: t("ligaturesTip"),
-        control: selectControl(draft.ligatures, [
-            {value: "auto", label: t("followSiYuan")},
-            {value: "on", label: t("enable")},
-            {value: "off", label: t("disable")},
-        ], (value) => {
-            draft.ligatures = value as TFollow;
-        }),
+    addSelect(t("ligatures"), t("ligaturesTip"), draft.ligatures, [
+        {value: "auto", label: t("followSiYuan")},
+        {value: "on", label: t("enable")},
+        {value: "off", label: t("disable")},
+    ], (value) => {
+        draft.ligatures = value as TFollow;
     });
 
-    rows.push({
-        title: t("highlight"),
-        description: t("highlightTip"),
-        control: selectControl(draft.highlight, [
-            {value: "follow", label: t("followSiYuan")},
-            {value: "vscode", label: t("schemeVsCode")},
-            {value: "github", label: t("schemeGitHub")},
-        ], (value) => {
-            draft.highlight = value as THighlight;
-        }),
+    addSelect(t("highlight"), t("highlightTip"), draft.highlight, [
+        {value: "follow", label: t("followSiYuan")},
+        {value: "vscode", label: t("schemeVsCode")},
+        {value: "github", label: t("schemeGitHub")},
+    ], (value) => {
+        draft.highlight = value as THighlight;
     });
 
-    rows.push({
+    setting.addItem({
         title: t("fontSize"),
         description: t("fontSizeTip"),
-        control: (() => {
+        createActionElement: () => {
             const input = document.createElement("input");
-            input.type = "number";
-            input.className = "b3-text-field";
             input.min = "1";
             input.max = String(MAX_FONT_SIZE);
             input.step = "1";
             input.placeholder = t("followSiYuan");
             input.value = draft.fontSize > 0 ? String(draft.fontSize) : "";
-            input.addEventListener("input", () => {
-                const value = Number(input.value);
+            return numberControl(input, (raw) => {
+                const value = Number(raw);
                 // 留空即跟随思源；超出范围的按上下限收拢，与 normalizeSettings 一致
                 draft.fontSize = Number.isFinite(value) && value > 0
                     ? Math.min(MAX_FONT_SIZE, Math.round(value))
                     : 0;
             });
-            const wrapper = document.createElement("div");
-            wrapper.className = "editor-siyuan-settings__number";
-            wrapper.append(input);
-            return wrapper;
-        })(),
+        },
     });
 
-    rows.push({
-        title: t("autocomplete"),
-        description: t("autocompleteTip"),
-        control: switchControl(draft.autocomplete, (checked) => {
-            draft.autocomplete = checked;
-        }),
+    addSwitch(t("autocomplete"), t("autocompleteTip"), draft.autocomplete, (checked) => {
+        draft.autocomplete = checked;
     });
 
-    rows.push({
-        title: t("restoreCursor"),
-        description: t("restoreCursorTip"),
-        control: switchControl(draft.restoreCursor, (checked) => {
-            draft.restoreCursor = checked;
-        }),
+    addSwitch(t("restoreCursor"), t("restoreCursorTip"), draft.restoreCursor, (checked) => {
+        draft.restoreCursor = checked;
     });
 
-    rows.push({
-        title: t("debugMode"),
-        description: t("debugModeTip"),
-        control: switchControl(draft.debug, (checked) => {
-            draft.debug = checked;
-        }),
+    addSwitch(t("debugMode"), t("debugModeTip"), draft.debug, (checked) => {
+        draft.debug = checked;
     });
 
-    rows.push({
+    setting.addItem({
         title: t("forget"),
         description: t("forgetTip"),
-        control: (() => {
+        createActionElement: () => {
             const button = document.createElement("button");
             button.className = "b3-button b3-button--outline fn__flex-center";
             const label = () => {
@@ -375,52 +303,50 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
                 label();
             });
             return button;
-        })(),
+        },
     });
 
-    // 整份 DOM 在这里、在对话框之外拼完。之后只做一次写入，入场帧里渲染树不再变动。
-    const content = document.createElement("div");
-    content.className = "b3-dialog__content";
-    content.append(...rows.map(buildRow));
+    openWithFocusGuard(setting, options.title);
+    markLayer(setting);
+}
 
-    const action = document.createElement("div");
-    action.className = "b3-dialog__action";
-    const cancel = document.createElement("button");
-    cancel.className = "b3-button b3-button--cancel";
-    cancel.textContent = t("cancel");
-    const space = document.createElement("div");
-    space.className = "fn__space";
-    const save = document.createElement("button");
-    save.className = "b3-button b3-button--text";
-    save.textContent = t("save");
-    action.append(cancel, space, save);
-
-    const dialog = new Dialog({
-        title: options.title,
-        // 与宿主 Setting 的默认尺寸一致
-        width: isMobileFrontend() ? "92vw" : "768px",
-        height: "80vh",
-        content: "",
-    });
-    const container = dialog.element.querySelector<HTMLElement>(".b3-dialog__container")!;
-    // 样式挂在私有类名上（见 index.scss）。Dialog 的 containerClassName 是较新版本才有的
-    // 选项，SDK 类型里还没有，直接打类名就不必抬高 minAppVersion。
-    container.classList.add("editor-siyuan-settings");
-    dialog.element.querySelector<HTMLElement>(".b3-dialog__body")!.replaceChildren(content, action);
-
-    cancel.addEventListener("click", () => {
-        dialog.destroy();
-    });
-    save.addEventListener("click", () => {
-        options.onSave({...draft});
-        dialog.destroy();
-    });
-    // 与宿主的 bindInput 一致：单行输入框里回车等于点保存；文本域里回车是换行
-    content.addEventListener("keydown", (event: KeyboardEvent) => {
-        if (event.key !== "Enter" || event.isComposing || !(event.target instanceof HTMLInputElement)) {
-            return;
+/**
+ * 打开面板，并在同步流程里挡住宿主对输入控件的自动聚焦。
+ *
+ * 移动端宿主重写了 HTMLElement.prototype.focus：可输入控件一旦被程序性聚焦就调
+ * JSAndroid.showKeyboard()，键盘带起的 adjustResize 会改 WebView 高度、整页重排。
+ * 那次聚焦发生在宿主 Setting.open() 里，插件只能在这一段同步调用上临时接管。
+ * 只挡 input / textarea，容器等非输入控件照常聚焦；桌面端不动宿主行为。
+ */
+function openWithFocusGuard(setting: Setting, title: string): void {
+    const originalFocus = HTMLElement.prototype.focus;
+    const guard = isMobileFrontend();
+    if (guard) {
+        HTMLElement.prototype.focus = function (this: HTMLElement, focusOptions?: FocusOptions): void {
+            if (this instanceof HTMLInputElement || this instanceof HTMLTextAreaElement) {
+                return;
+            }
+            originalFocus.call(this, focusOptions);
+        };
+    }
+    try {
+        setting.open(title);
+    } finally {
+        if (guard) {
+            HTMLElement.prototype.focus = originalFocus;
         }
-        event.preventDefault();
-        save.click();
-    });
+    }
+}
+
+/**
+ * 给面板容器与滚动正文补上私有类名（样式见 index.scss）。
+ *
+ * 两者都常驻 will-change: transform：入场那段 scale / opacity 过渡结束后合成层一被丢掉，
+ * App 的 WebView 会提交层不存在时的旧纹理，整屏就是那一帧旧画面。设置面板正文会滚动，
+ * 只处理外壳时正文仍会闪，所以两处都要加。
+ */
+function markLayer(setting: Setting): void {
+    const element = (setting as TSettingWithDialog).dialog?.element;
+    element?.querySelector(".b3-dialog__container")?.classList.add("editor-siyuan-settings");
+    element?.querySelector(".b3-dialog__content")?.classList.add("editor-siyuan-settings__content");
 }

@@ -194,6 +194,110 @@ export class Dialog {
     }
 }
 
+export interface ISettingItem {
+    title: string;
+    description?: string;
+    direction?: "column" | "row";
+    actionElement?: HTMLElement;
+    createActionElement?(): HTMLElement;
+}
+
+/**
+ * 宿主 Setting 的替身：按宿主的做法把每一行拼进 Dialog，让测试能像看真面板一样看 DOM。
+ *
+ * 这里刻意照抄宿主的行结构（config-item / config-name / b3-label__text、开关行包 label、
+ * direction 决定控件挂在 .fn__flex-1 旁边还是 .fn__block 里），以及两条打开路径：
+ * 单行输入框里回车等于点保存，末尾把焦点放到正文里第一个 input / textarea。
+ * 改动这里前先对照宿主 plugin/Setting.ts，别让替身和宿主分叉。
+ */
+export class Setting {
+    static readonly instances: Setting[] = [];
+
+    readonly items: ISettingItem[] = [];
+    readonly options: {confirmCallback?: () => void; destroyCallback?: () => void};
+    dialog: Dialog | undefined;
+    openedName: string | undefined;
+
+    constructor(options: {height?: string; width?: string; confirmCallback?: () => void; destroyCallback?: () => void} = {}) {
+        this.options = options;
+        Setting.instances.push(this);
+    }
+
+    addItem(item: ISettingItem): void {
+        this.items.push(item);
+    }
+
+    open(name: string): void {
+        this.openedName = name;
+        const dialog = new Dialog({
+            title: name,
+            content: `<div class="b3-dialog__content"></div>
+<div class="b3-dialog__action${this.options.confirmCallback ? "" : " fn__none"}">
+    <button class="b3-button b3-button--cancel">取消</button>
+    <div class="fn__space"></div>
+    <button class="b3-button b3-button--text">保存</button>
+</div>`,
+            destroyCallback: this.options.destroyCallback,
+        });
+        const contentElement = dialog.element.querySelector(".b3-dialog__content")!;
+        for (const item of this.items) {
+            const actionElement = item.actionElement ?? item.createActionElement?.();
+            const tagName = actionElement?.classList.contains("b3-switch") ? "label" : "div";
+            const direction = item.direction ?? (!actionElement || actionElement.tagName === "TEXTAREA" ? "row" : "column");
+            const titleBlock = `<div class="config-name">${item.title}</div>
+        ${item.description ? `<div class="b3-label__text">${item.description}</div>` : ""}`;
+            if (direction === "row") {
+                contentElement.insertAdjacentHTML("beforeend", `<${tagName} class="b3-label config-item">
+    <div class="fn__block">
+        ${titleBlock}
+        <div class="fn__hr"></div>
+    </div>
+</${tagName}>`);
+                if (actionElement) {
+                    contentElement.lastElementChild!.lastElementChild!.insertAdjacentElement("beforeend", actionElement);
+                    actionElement.classList.add("fn__block");
+                }
+                continue;
+            }
+            contentElement.insertAdjacentHTML("beforeend", `<${tagName} class="fn__flex b3-label config-item">
+    <div class="fn__flex-1">
+        ${titleBlock}
+    </div>
+    <span class="fn__space${actionElement ? "" : " fn__none"}"></span>
+</${tagName}>`);
+            if (actionElement) {
+                actionElement.classList.remove("fn__block");
+                actionElement.classList.add("fn__flex-center");
+                if (!actionElement.classList.contains("b3-switch")) {
+                    actionElement.classList.add("fn__size200");
+                }
+                contentElement.lastElementChild!.insertAdjacentElement("beforeend", actionElement);
+            }
+        }
+        const buttons = dialog.element.querySelectorAll<HTMLButtonElement>(".b3-dialog__action .b3-button");
+        buttons[0].addEventListener("click", () => {
+            dialog.destroy();
+        });
+        buttons[1].addEventListener("click", () => {
+            this.options.confirmCallback?.();
+            dialog.destroy();
+        });
+        // 宿主的 bindInput：单行输入框里回车等于点保存，文本域里回车是换行
+        for (const input of contentElement.querySelectorAll("input")) {
+            input.addEventListener("keydown", (event: KeyboardEvent) => {
+                if (event.key !== "Enter" || event.isComposing) {
+                    return;
+                }
+                event.preventDefault();
+                buttons[1].click();
+            });
+        }
+        // 宿主打开路径的末尾：把焦点放到正文里第一个 input / textarea（移动端会带起软键盘）
+        contentElement.querySelector<HTMLElement>("input, textarea")?.focus();
+        this.dialog = dialog;
+    }
+}
+
 export const openTab = vi.fn(async (_options?: Record<string, unknown>) => ({}));
 
 let activeTab: Record<string, any> | undefined;
@@ -221,6 +325,7 @@ export function resetSiyuanMock(): void {
     Plugin.instances.length = 0;
     Menu.instances.length = 0;
     Dialog.instances.length = 0;
+    Setting.instances.length = 0;
     activeTab = undefined;
     frontend = "desktop";
 }

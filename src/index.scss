@@ -340,10 +340,12 @@
 }
 
 // ---- 设置面板 ----
-// 面板是插件自己拼的 Dialog（见 settings-panel.ts）。容器常驻 will-change: transform，
-// 让入场那段 scale / opacity 过渡结束后合成层不被丢掉：层一销毁，App 的 WebView 只能提交
-// 层不存在时的旧纹理，整屏就是那一帧旧画面。与 translateY 抽屉预热图层的道理相同。
-.b3-dialog__container.editor-siyuan-settings {
+// 面板交给宿主的 Setting，这里只补两处插件自己的钩子（见 settings-panel.ts）：
+// 容器与滚动正文都常驻 will-change: transform，让入场那段过渡结束后合成层不被丢掉：
+// 层一销毁，App 的 WebView 只能提交层不存在时的旧纹理，整屏就是那一帧旧画面。
+// 正文会滚动，只处理外壳时正文仍会闪，所以两处都加。与 translateY 抽屉预热图层的道理相同。
+.b3-dialog__container.editor-siyuan-settings,
+.b3-dialog__content.editor-siyuan-settings__content {
   will-change: transform;
 }
 
@@ -357,11 +359,6 @@
     min-height: 120px;
     max-height: 320px;
   }
-}
-
-// 数字输入框外面那层：面板给这一行挂的是 fn__size200（200px），里面那个输入框撑满它。
-.editor-siyuan-settings__number .b3-text-field {
-  width: 100%;
 }
 
 // ---- 移动端：全屏对话框 ----

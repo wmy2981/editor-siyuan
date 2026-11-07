@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import type {Plugin as SiyuanPlugin} from "siyuan";
-import {Dialog, Plugin, __setFrontend} from "../support/siyuan";
+import {Plugin, Setting, __setFrontend} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {
     DEFAULT_EXTENSIONS,
@@ -67,17 +67,17 @@ const labels = {
     forget: "清除记忆",
     forgetTip: "清除提示",
     forgetButton: "清除 {count} 条",
-    cancel: "取消",
-    save: "保存",
 };
 
 const t = makeT(labels);
 
+/** 打开面板，返回宿主替身收到的 Setting 与它渲染出来的对话框。 */
 function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
     const onSave = vi.fn();
     const onForget = vi.fn();
     openSettingsPanel({title: "文本编辑器", t, settings: makeSettings(overrides), onSave, onForget});
-    const dialog = Dialog.instances[Dialog.instances.length - 1];
+    const setting = Setting.instances[Setting.instances.length - 1];
+    const dialog = setting.dialog!;
     const row = (title: string): HTMLElement => {
         const found = Array.from(dialog.element.querySelectorAll<HTMLElement>(".config-item"))
             .find((item) => item.querySelector(".config-name")?.textContent === title);
@@ -96,7 +96,7 @@ function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
         Array.from(dialog.element.querySelectorAll(".config-name")).map((item) => item.textContent);
     const save = (): void => (dialog.element.querySelector(".b3-button--text") as HTMLButtonElement).click();
     const cancel = (): void => (dialog.element.querySelector(".b3-button--cancel") as HTMLButtonElement).click();
-    return {dialog, control, row, titles, save, cancel, onSave, onForget};
+    return {setting, dialog, control, row, titles, save, cancel, onSave, onForget};
 }
 
 function toggle(element: HTMLElement, checked: boolean): void {
@@ -122,12 +122,13 @@ describe("openSettingsPanel", () => {
         await initStore(new Plugin() as unknown as SiyuanPlugin);
     });
 
-    it("用插件显示名打开设置面板", () => {
-        const {dialog} = open();
+    it("用插件显示名打开宿主的面板", () => {
+        const {setting, dialog} = open();
+        expect(setting.openedName).toBe("文本编辑器");
         expect(dialog.options.title).toBe("文本编辑器");
     });
 
-    it("桌面端渲染全部设置项，顺序稳定", () => {
+    it("桌面端声明全部设置项，顺序稳定", () => {
         expect(open().titles()).toEqual([
             labels.takeover,
             labels.takeoverGesture,
@@ -151,25 +152,69 @@ describe("openSettingsPanel", () => {
         ]);
     });
 
-    it("移动端不渲染手势选项", () => {
+    it("移动端不声明手势选项", () => {
         __setFrontend("mobile");
         const {titles} = open();
         expect(titles()).not.toContain(labels.takeoverGesture);
         expect(titles()).toHaveLength(17);
     });
 
-    it("移动端与独立窗口不渲染形态选项", () => {
+    it("移动端与独立窗口不声明形态选项", () => {
         __setFrontend("mobile");
         expect(open().titles()).not.toContain(labels.desktopForm);
         __setFrontend("desktop-window");
         expect(open().titles()).not.toContain(labels.desktopForm);
     });
 
-    it("打开期间不聚焦任何输入控件", () => {
+    it("控件是宿主的控件类名，宿主自己摆位置", () => {
+        const {control} = open();
+        expect(control(labels.takeover).className).toContain("b3-switch");
+        expect(control(labels.takeoverGesture).className).toContain("b3-select");
+        expect(control(labels.extensions).querySelector("textarea")?.className).toContain("b3-text-field");
+        expect(control(labels.forget).className).toContain("b3-button");
+        // 数字框直接交给宿主，不再包一层自己的容器
+        expect(control(labels.maxSize).tagName).toBe("INPUT");
+        expect(control(labels.fontSize).tagName).toBe("INPUT");
+    });
+
+    it("扩展名项占整行", () => {
+        const {row} = open();
+        expect(row(labels.extensions).firstElementChild?.className).toContain("fn__block");
+        expect(row(labels.maxSize).firstElementChild?.className).toContain("fn__flex-1");
+    });
+
+    it("打开后给面板容器与滚动正文补图层提示", () => {
+        const {dialog} = open();
+        expect(dialog.element.querySelector(".b3-dialog__container")?.className).toContain("editor-siyuan-settings");
+        expect(dialog.element.querySelector(".b3-dialog__content")?.className)
+            .toContain("editor-siyuan-settings__content");
+    });
+
+    it("移动端打开期间不聚焦输入控件，桌面端保留宿主行为", () => {
         // 移动端宿主重写过 HTMLElement.prototype.focus，落到可输入控件上就会调起软键盘
+        __setFrontend("mobile");
         const focus = vi.spyOn(HTMLElement.prototype, "focus");
-        open();
+        const mobile = open();
         expect(focus).not.toHaveBeenCalled();
+        expect(document.activeElement).not.toBe(mobile.control(labels.takeover));
+        focus.mockRestore();
+        // 挡聚焦只在打开期间生效：用户自己点输入框仍然要能聚焦
+        const input = mobile.control(labels.maxSize) as HTMLInputElement;
+        input.focus();
+        expect(document.activeElement).toBe(input);
+
+        __setFrontend("desktop");
+        const desktopFocus = vi.spyOn(HTMLElement.prototype, "focus");
+        open();
+        expect(desktopFocus).toHaveBeenCalled();
+        desktopFocus.mockRestore();
+    });
+
+    it("宿主原型上的 focus 在打开后被还原", () => {
+        __setFrontend("mobile");
+        const original = HTMLElement.prototype.focus;
+        open();
+        expect(HTMLElement.prototype.focus).toBe(original);
     });
 
     it("改形态会写进保存的设置，但仍不改任何东西直到点保存", () => {
@@ -196,20 +241,6 @@ describe("openSettingsPanel", () => {
         expect(onSave).not.toHaveBeenCalled();
         save();
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({highlight: "vscode"}));
-    });
-
-    it("扩展名项占整行", () => {
-        const {row} = open();
-        expect(row(labels.extensions).firstElementChild?.className).toContain("fn__block");
-        expect(row(labels.maxSize).firstElementChild?.className).toContain("fn__flex-1");
-    });
-
-    it("控件使用思源的控件类名", () => {
-        const {control} = open();
-        expect(control(labels.takeover).className).toContain("b3-switch");
-        expect(control(labels.takeoverGesture).className).toContain("b3-select");
-        expect(control(labels.extensions).querySelector("textarea")?.className).toContain("b3-text-field");
-        expect(control(labels.forget).className).toContain("b3-button");
     });
 
     it("接管开关：关掉即 none，再打开回到 click", () => {
@@ -300,9 +331,7 @@ describe("openSettingsPanel", () => {
 
     it("大小上限只接受正数", () => {
         const {control, save, onSave} = open({maxSizeMB: 5});
-        const wrapper = control(labels.maxSize);
-        expect(wrapper.className).toContain("editor-siyuan-settings__number");
-        const input = wrapper.querySelector("input") as HTMLInputElement;
+        const input = control(labels.maxSize) as HTMLInputElement;
         expect(input.type).toBe("number");
         expect(input.min).toBe("0.1");
         expect(input.step).toBe("0.1");
@@ -357,9 +386,7 @@ describe("openSettingsPanel", () => {
 
     it("字号只接受正数，留空跟随思源", () => {
         const {control, save, onSave} = open({fontSize: 0});
-        const wrapper = control(labels.fontSize);
-        expect(wrapper.className).toContain("editor-siyuan-settings__number");
-        const input = wrapper.querySelector("input") as HTMLInputElement;
+        const input = control(labels.fontSize) as HTMLInputElement;
         expect(input.type).toBe("number");
         expect(input.value).toBe("");
         expect(input.placeholder).toBe(labels.followSiYuan);
@@ -404,7 +431,7 @@ describe("openSettingsPanel", () => {
 
     it("单行输入框里回车等于点保存，文本域里回车是换行", () => {
         const {control, onSave} = open();
-        const input = control(labels.maxSize).querySelector("input")!;
+        const input = control(labels.maxSize) as HTMLInputElement;
         type(input, "8");
         input.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
         expect(onSave).toHaveBeenCalledWith(expect.objectContaining({maxSizeMB: 8}));
@@ -425,5 +452,13 @@ describe("openSettingsPanel", () => {
         expect(saved.extensions).toBe("txt");
         type(control(labels.extensions).querySelector("textarea")!, "md");
         expect(saved.extensions).toBe("txt");
+    });
+
+    it("每次打开都新建一份面板与草稿，重开显示当前设置", () => {
+        open({debug: false}).dialog;
+        expect(Setting.instances).toHaveLength(1);
+        const second = open({debug: true});
+        expect(Setting.instances).toHaveLength(2);
+        expect((second.control(labels.debugMode) as HTMLInputElement).checked).toBe(true);
     });
 });

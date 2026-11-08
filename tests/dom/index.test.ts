@@ -100,7 +100,14 @@ describe("onload", () => {
         const model = {element: document.createElement("div"), data: {link: "assets/a.txt"}};
         plugin.tabs[0].init.call(model);
         expect(createView).toHaveBeenCalledWith(
-            {element: model.element, data: model.data},
+            {
+                element: model.element,
+                data: model.data,
+                // 没有候选文件时操作条不画标题，也没有下拉
+                title: undefined,
+                files: [],
+                onSwitch: expect.any(Function),
+            },
             expect.any(Function),
             expect.any(Function),
         );
@@ -111,6 +118,29 @@ describe("onload", () => {
         // 再销毁一次不应重复释放
         plugin.tabs[0].beforeDestroy.call(model);
         expect(view.dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it("候选文件多于一个时画可点标题，切换后更新 data 与页签头", async () => {
+        vi.mocked(createView).mockReturnValue({dispose: vi.fn()} as any);
+        await plugin.onload();
+        const updateTitle = vi.fn();
+        const files = [
+            {link: "/data/a.json", title: "a.json", workspace: true},
+            {link: "/data/b.json", title: "b.json", workspace: true},
+        ];
+        const model = {
+            element: document.createElement("div"),
+            tab: {title: "a.json", updateTitle},
+            data: {link: "/data/a.json", workspace: true, files},
+        };
+        plugin.tabs[0].init.call(model);
+        const host = vi.mocked(createView).mock.calls[0][0];
+        expect(host.title).toBe("a.json");
+        expect(host.files).toBe(files);
+
+        host.onSwitch!(files[1]);
+        expect(model.data.link).toBe("/data/b.json");
+        expect(updateTitle).toHaveBeenCalledWith("b.json");
     });
 
     it("命令没有页签时提示，有页签时保存", async () => {

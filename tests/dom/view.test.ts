@@ -16,6 +16,7 @@ import {makeT} from "../../src/i18n";
 import {openConfirmDialog} from "../../src/dialog";
 import {openLanguageMenu} from "../../src/language-menu";
 import {openMoreMenu} from "../../src/more-menu";
+import {openFileMenu} from "../../src/file-menu";
 import {openEditorMenu} from "../../src/context-menu";
 import {toggleSearchPanel, closeSearch} from "../../src/search";
 import {loadHljs} from "../../src/hljs";
@@ -77,6 +78,7 @@ vi.mock("../../src/dialog", () => ({openConfirmDialog: vi.fn()}));
 vi.mock("../../src/search", () => ({toggleSearchPanel: vi.fn(), closeSearch: vi.fn()}));
 vi.mock("../../src/language-menu", () => ({openLanguageMenu: vi.fn()}));
 vi.mock("../../src/more-menu", () => ({openMoreMenu: vi.fn()}));
+vi.mock("../../src/file-menu", () => ({openFileMenu: vi.fn()}));
 vi.mock("../../src/context-menu", () => ({openEditorMenu: vi.fn()}));
 
 const t = makeT({
@@ -99,6 +101,11 @@ const t = makeT({
     redo: "重做",
     lineWrap: "换行",
     languageLabel: "语言",
+    switchFile: "切换文件",
+    closeTitle: "有未保存的改动",
+    closeBody: "{file} 有未保存的改动",
+    cancel: "取消",
+    closeDiscard: "不保存",
     restoreTitle: "恢复未保存内容",
     restoreBody: "上次关闭时有未保存内容",
     restoreIgnore: "忽略",
@@ -704,6 +711,91 @@ describe("配色方案", () => {
         expect(tab.element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("");
         refreshEditorSettings(makeSettings({highlight: "follow"}));
         expect(tab.element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("rgb(13, 17, 23)");
+    });
+});
+
+describe("标题下拉切换文件", () => {
+    const FILES = [
+        {link: "/data/a.json", title: "a.json", workspace: true},
+        {link: "/data/b.json", title: "b.json", workspace: true},
+    ];
+    const titleOf = (tab: IEditorTab): HTMLElement => tab.element.querySelector<HTMLElement>(".editor-siyuan__title")!;
+
+    function switchableHost(extra: Partial<IViewHost> = {}): IViewHost {
+        return host({link: FILES[0].link, workspace: true}, {title: FILES[0].title, files: FILES, ...extra});
+    }
+
+    it("候选文件多于一个时画出可点标题", () => {
+        const tab = openView(switchableHost());
+        const title = titleOf(tab);
+        expect(title.textContent).toBe("a.json");
+        expect(title.classList.contains("editor-siyuan__title--switch")).toBe(true);
+        expect(title.getAttribute("role")).toBe("button");
+        expect(title.getAttribute("data-menu")).toBe("true");
+        expect(title.getAttribute("aria-label")).toBe("切换文件");
+    });
+
+    it("只有一个候选时标题不可点", () => {
+        const tab = openView(host({link: FILES[0].link}, {title: "a.json", files: [FILES[0]]}));
+        expect(titleOf(tab).classList.contains("editor-siyuan__title--switch")).toBe(false);
+        expect(titleOf(tab).hasAttribute("role")).toBe(false);
+    });
+
+    it("点标题用当前文件打开下拉", () => {
+        const tab = openView(switchableHost());
+        titleOf(tab).click();
+        expect(openFileMenu).toHaveBeenCalledTimes(1);
+        const [anchor, files, currentLink] = vi.mocked(openFileMenu).mock.calls[0];
+        expect(anchor).toBe(titleOf(tab));
+        expect(files).toBe(FILES);
+        expect(currentLink).toBe("/data/a.json");
+    });
+
+    it("键盘也能打开下拉", () => {
+        const tab = openView(switchableHost());
+        titleOf(tab).dispatchEvent(new KeyboardEvent("keydown", {key: "Enter"}));
+        expect(openFileMenu).toHaveBeenCalledTimes(1);
+    });
+
+    it("没有未保存改动时直接换文件，并通知宿主", async () => {
+        const onSwitch = vi.fn();
+        const tab = await openReady(switchableHost({onSwitch}));
+        titleOf(tab).click();
+        const pick = vi.mocked(openFileMenu).mock.calls[0][3];
+        pick(FILES[1]);
+        await vi.waitFor(() => expect(tab.link).toBe("/data/b.json"));
+        expect(onSwitch).toHaveBeenCalledWith(FILES[1]);
+        expect(titleOf(tab).textContent).toBe("b.json");
+        expect(tabFor("/data/b.json")).toBe(tab);
+        expect(tabFor("/data/a.json")).toBeUndefined();
+        expect(openConfirmDialog).not.toHaveBeenCalled();
+        expect(resolveWorkspaceFile).toHaveBeenLastCalledWith("/data/b.json");
+    });
+
+    it("有未保存改动时先问，取消就留在原文件", async () => {
+        const onSwitch = vi.fn();
+        const tab = await openReady(switchableHost({onSwitch}));
+        lastOptions.onChange();
+        titleOf(tab).click();
+        const pick = vi.mocked(openFileMenu).mock.calls[0][3];
+        pick(FILES[1]);
+        expect(openConfirmDialog).toHaveBeenCalledTimes(1);
+        const options = vi.mocked(openConfirmDialog).mock.calls[0][0];
+        expect(options.text).toBe("a.json 有未保存的改动");
+        options.onCancel?.();
+        expect(tab.link).toBe("/data/a.json");
+        expect(onSwitch).not.toHaveBeenCalled();
+    });
+
+    it("有未保存改动时选「不保存」也照样切过去", async () => {
+        const tab = await openReady(switchableHost());
+        lastOptions.onChange();
+        titleOf(tab).click();
+        vi.mocked(openFileMenu).mock.calls[0][3](FILES[1]);
+        const options = vi.mocked(openConfirmDialog).mock.calls[0][0];
+        options.actions[0].onClick();
+        await vi.waitFor(() => expect(tab.link).toBe("/data/b.json"));
+        expect(tab.isDirty()).toBe(false);
     });
 });
 

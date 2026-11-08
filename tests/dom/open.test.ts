@@ -8,6 +8,7 @@ import {openMobileEditor} from "../../src/mobile";
 import {openPopupEditor} from "../../src/popup";
 import {
     openEditor,
+    openFileList,
     openSyPreview,
     registerOpenHandlers,
     TAB_TYPE,
@@ -362,5 +363,63 @@ describe("笔记文档的 .sy 预览菜单", () => {
         plugin.eventBus.emit("click-editortitleicon", {protyle: {notebookId: "", path: "/doc.sy"}, menu});
         plugin.eventBus.emit("click-editortitleicon", {protyle: {notebookId: "box", path: ""}, menu});
         expect(menu.items).toHaveLength(0);
+    });
+});
+
+describe("openFileList", () => {
+    const FILES = [
+        {link: "/data/a.json", title: "a.json", workspace: true},
+        {link: "/data/b.json", title: "b.json", workspace: true},
+    ];
+
+    it("桌面端开页签，候选表与数据一起带上", () => {
+        openFileList(deps, FILES);
+        expect(openTab).toHaveBeenCalledTimes(1);
+        const custom = (vi.mocked(openTab).mock.calls[0][0] as any).custom;
+        expect(custom.id).toBe("editor-siyuan" + TAB_TYPE);
+        expect(custom.icon).toBe(ICON_TAB);
+        expect(custom.title).toBe("a.json");
+        expect(custom.data).toEqual({link: "/data/a.json", workspace: true, sy: undefined, files: FILES});
+    });
+
+    it("指定起点时从那个文件开始", () => {
+        openFileList(deps, FILES, "/data/b.json");
+        expect((vi.mocked(openTab).mock.calls[0][0] as any).custom.title).toBe("b.json");
+    });
+
+    it("移动端改走全屏对话框，并带上候选表", () => {
+        __setFrontend("mobile");
+        openFileList(deps, FILES);
+        expect(openTab).not.toHaveBeenCalled();
+        expect(openMobileEditor).toHaveBeenCalledWith(
+            deps,
+            {link: "/data/a.json", workspace: true, sy: undefined},
+            "a.json",
+            FILES,
+        );
+    });
+
+    it("形态选成浮层时改走浮层", () => {
+        settings = makeSettings({desktopForm: "dialog"});
+        openFileList(deps, FILES);
+        expect(openTab).not.toHaveBeenCalled();
+        expect(openPopupEditor).toHaveBeenCalledWith(
+            deps,
+            {link: "/data/a.json", workspace: true, sy: undefined},
+            "a.json",
+            FILES,
+        );
+    });
+
+    it("同一个文件已经开着时只聚焦", () => {
+        const {switchTab, headElement} = openedModel("/data/a.json");
+        openFileList(deps, FILES);
+        expect(openTab).not.toHaveBeenCalled();
+        expect(switchTab).toHaveBeenCalledWith(headElement, true);
+    });
+
+    it("候选为空时什么都不做", () => {
+        openFileList(deps, []);
+        expect(openTab).not.toHaveBeenCalled();
     });
 });

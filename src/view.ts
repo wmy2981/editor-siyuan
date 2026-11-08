@@ -49,8 +49,10 @@ import {loadHljs} from "./hljs";
 import {closeSearch, toggleSearchPanel} from "./search";
 import {openLanguageMenu} from "./language-menu";
 import {openMoreMenu} from "./more-menu";
+import {openFileMenu} from "./file-menu";
 import {applyCodeBlockColors} from "./theme";
 import {openConfirmDialog} from "./dialog";
+import {confirmClose} from "./unsaved";
 import {openEditorMenu} from "./context-menu";
 import {ICON_SAVE, ICON_WRAP} from "./icons";
 import {config, escapeHtml} from "./util";
@@ -102,11 +104,28 @@ export const focusedTab = (): IEditorTab | undefined => {
 const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 /**
+ * 标题下拉里的一个候选文件。
+ *
+ * 只有调用方明确给出一组文件时才有下拉（见 open.ts 的 openFileList）；默认打开单个文件时
+ * 操作条上不会多出任何东西。
+ */
+export interface IViewFile {
+    /** 资源链接（`assets/…`），或工作区相对路径（`/data/…`）。 */
+    link: string;
+    /** 下拉与标题里显示的名字。 */
+    title: string;
+    /** 路径是工作区里的普通文件，按工作区路径读取；.sy 预览同样走这条。 */
+    workspace?: boolean;
+    /** 只读的 .sy 预览。 */
+    sy?: boolean;
+}
+
+/**
  * 视图的宿主容器。
  *
  * 桌面端默认是思源的自定义页签（`Custom` 带着 element 与 data）；移动端与桌面端的
  * 浮层形态都是对话框里的一个 div（移动端的自定义页签 API 是空实现，见 mobile.ts、
- * popup.ts）。视图本身不关心自己挂在哪，只认这三个字段。
+ * popup.ts）。视图本身不关心自己挂在哪，只认这几个字段。
  */
 export interface IViewHost {
     /** 视图挂到这里。页签给的 Custom.element 只是 Element，对话框给的 div 是 HTMLElement。 */
@@ -119,6 +138,13 @@ export interface IViewHost {
      */
     title?: string;
     /**
+     * 标题下拉里的候选文件。给了两个以上时操作条上的标题变成可点的下拉，
+     * 选中另一个文件就在同一个视图里切过去。
+     */
+    files?: IViewFile[];
+    /** 视图切换到了另一个文件，宿主据此更新页签头、对话框标题这类外壳。 */
+    onSwitch?: (file: IViewFile) => void;
+    /**
      * 关闭动作，同时决定要不要画那个关闭按钮。只有移动端的全屏对话框传：
      * 它铺满一屏，没有空白可点。桌面端浮层没有关闭按钮，Esc 与点空白由 popup.ts 自己接。
      */
@@ -126,9 +152,18 @@ export interface IViewHost {
 }
 
 export function createView(host: IViewHost, t: T, settings: () => Settings): IEditorTab {
-    const link = String(host.data?.link ?? "");
-    // .sy 文档预览：只读到底，不提供编辑、保存与暂存
-    const syDoc = host.data?.sy === true;
+    const initialLink = String(host.data?.link ?? "");
+    const files = host.files ?? [];
+    /** 当前文件的描述：候选表里有它就用表里的（可能带 workspace / sy），否则按宿主给的数据。 */
+    const describe = (target: string): IViewFile => files.find((item) => item.link === target) ?? {
+        link: target,
+        title: host.title ?? target,
+        workspace: host.data?.workspace === true,
+        sy: host.data?.sy === true,
+    };
+    let current = describe(initialLink);
+    // 候选只有一个时没必要点开，等于没有下拉
+    const switchable = files.length > 1;
     // 触屏（手机 App 与手机浏览器）：长按交给系统菜单，也不要自动聚焦把软键盘顶起来
     const touch = isMobileFrontend();
 
@@ -170,13 +205,18 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         applyCodeBlockColors(root, next === "follow");
     };
     applyHighlight(scheme);
+    // 标题：移动端与浮层没有页签头，文件名要画在操作条上；给了候选文件时它还是下拉的触发器。
+    const showTitle = host.title !== undefined || switchable;
+    const titleHtml = showTitle
+        ? `<span class="editor-siyuan__title${switchable ? " editor-siyuan__title--switch" : ""}"${
+            switchable ? ' data-menu="true" role="button" tabindex="0"' : ""}></span>`
+        : "";
     // data-menu="true" 是思源给「点开菜单的元素」打的标记，两个菜单触发元素都要带上：
     // 宿主的全局 click（boot/globalEvent/click.ts 的 globalClickHideMenu）会在任何 click
     // 之后关掉共享菜单，只有被点元素在菜单内、或带这个标记时才放过——否则点一下按钮，
     // 菜单刚弹出来就被这次点击自己关掉了。思源自己的 ⋮ 按钮也是这么标的（layout/dock/Inbox.ts）。
     root.innerHTML = `<div class="editor-siyuan__action">${host.onClose ? `
-<span class="editor-siyuan__icon" data-type="close"><svg><use xlink:href="#iconClose"></use></svg></span>` : ""}${host.title !== undefined ? `
-<span class="editor-siyuan__title"></span>` : ""}
+<span class="editor-siyuan__icon" data-type="close"><svg><use xlink:href="#iconClose"></use></svg></span>` : ""}${titleHtml}
 <span class="editor-siyuan__language" data-menu="true"></span>
 <span class="editor-siyuan__icon" data-type="undo"><svg><use xlink:href="#iconUndo"></use></svg></span>
 <span class="editor-siyuan__icon" data-type="redo"><svg><use xlink:href="#iconRedo"></use></svg></span>
@@ -203,26 +243,25 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
     const closeIcon = root.querySelector<HTMLElement>('[data-type="close"]');
     const titleElement = root.querySelector<HTMLElement>(".editor-siyuan__title");
     if (titleElement) {
-        titleElement.textContent = host.title ?? "";
-    }
-
-    // .sy 预览不提供切回编辑与保存这两个入口，用思源自己的 fn__none 隐藏
-    if (syDoc) {
-        readonlyIcon.classList.add("fn__none");
-        saveIcon.classList.add("fn__none");
+        titleElement.textContent = current.title;
+        if (switchable) {
+            titleElement.setAttribute("aria-label", t("switchFile"));
+        }
     }
 
     let ref: IAssetRef | undefined;
     let editor: EditorView | undefined;
     let dirty = false;
-    // 初始模式取自设置；之后由操作条上的按钮在这个页签内切换，不回写设置
-    let readOnly = syDoc || settings().openMode === "preview";
+    // 初始模式取自设置；之后由操作条上的按钮在这个视图内切换，不回写设置
+    let readOnly = current.sy === true || settings().openMode === "preview";
     // 换行按钮只在本次打开内覆盖设置，关掉页签即恢复到设置里的默认值
     let wrapOverride: boolean | undefined;
     let language = PLAIN_TEXT;
     let eol: "\n" | "\r\n" = "\n";
     let bom = false;
     let disposed = false;
+    /** 加载代次：切换文件时让上一条还没跑完的加载流程作废。 */
+    let loadToken = 0;
 
     const placeholder = (text: string, isError = false): void => {
         mount.innerHTML = `<div class="editor-siyuan__placeholder${isError ? " editor-siyuan__placeholder--error" : ""}">${escapeHtml(text)}</div>`;
@@ -283,6 +322,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
     };
 
     const syncIcons = (): void => {
+        const sy = current.sy === true;
         closeIcon?.setAttribute("aria-label", t("close"));
         searchIcon.setAttribute("aria-label", t("find"));
         undoIcon.setAttribute("aria-label", t("undo"));
@@ -291,6 +331,9 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         saveIcon.classList.toggle("editor-siyuan__icon--dirty", dirty);
         readonlyIcon.setAttribute("aria-label", readOnly ? t("switchToEdit") : t("switchToPreview"));
         readonlyIcon.innerHTML = `<svg><use xlink:href="#${readOnly ? "iconEdit" : "iconEye"}"></use></svg>`;
+        // .sy 预览不提供切回编辑与保存这两个入口，用思源自己的 fn__none 隐藏
+        readonlyIcon.classList.toggle("fn__none", sy);
+        saveIcon.classList.toggle("fn__none", sy);
         moreIcon.setAttribute("aria-label", t("more"));
         wrapIcon.setAttribute("aria-label", t("lineWrap"));
         // 空标签会被思源自己的 CSS 补上 "language"，加载完成前保持空
@@ -304,7 +347,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         if (!ref || !editor) {
             return false;
         }
-        if (syDoc) {
+        if (current.sy === true) {
             // 预览的 .sy 文档没有可切换的编辑模式，不能复用「切回编辑后才能保存」那句提示
             showMessage(t("syReadonly"), 3000);
             return false;
@@ -328,13 +371,16 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
     };
 
     const tab: IEditorTab = {
-        link,
+        // 切换文件后链接会变：页签查找（tabFor）、暂存键与命令目标都靠它
+        get link() {
+            return current.link;
+        },
         element: root,
         isDirty: () => dirty,
         save,
         discard: () => {
             dirty = false;
-            dropStash(link);
+            dropStash(current.link);
             syncIcons();
         },
         setLineNumbers: (show: boolean) => {
@@ -363,13 +409,14 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         },
         dispose: () => {
             disposed = true;
-            debug("dispose tab", {link, dirty, readOnly});
+            loadToken++;
+            debug("dispose tab", {link: current.link, dirty, readOnly});
             if (editor) {
                 if (settings().restoreCursor) {
-                    rememberCursor(link, readCursor(editor));
+                    rememberCursor(current.link, readCursor(editor));
                 }
                 if (dirty && ref && settings().stashUnsaved) {
-                    putStash(link, {text: editor.state.doc.toString(), eol, bom, at: Date.now()});
+                    putStash(current.link, {text: editor.state.doc.toString(), eol, bom, at: Date.now()});
                 }
                 editor.destroy();
                 editor = undefined;
@@ -437,7 +484,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             if (editor) {
                 setEditorLanguage(editor, picked);
             }
-            rememberLanguage(link, picked);
+            rememberLanguage(current.link, picked);
             syncIcons();
         });
     });
@@ -455,19 +502,39 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
     registry.add(tab);
     host.element.append(root);
     syncIcons();
-    placeholder(t("loading"));
 
-    void (async () => {
+    /**
+     * 把某个文件装进视图。
+     *
+     * 首次打开与标题下拉切换文件走同一条路，切换只是先把上一个文件换下去。
+     * 每条流程带一个代次号：切走之后上一条还在等 IO 的流程直接作废，
+     * 不能把旧文件的内容装进新文件的视图。
+     */
+    const load = async (target: IViewFile): Promise<void> => {
+        const token = ++loadToken;
+        current = target;
+        ref = undefined;
+        dirty = false;
+        if (target.sy === true) {
+            // .sy 预览没有可切换的编辑模式
+            readOnly = true;
+        }
+        if (titleElement) {
+            titleElement.textContent = target.title;
+        }
+        syncIcons();
+        placeholder(t("loading"));
         if (config().readonly) {
             placeholder(t("workspaceReadonly"), true);
             return;
         }
-        const resolved = syDoc ? await resolveWorkspaceFile(link) : await resolveAsset(link);
-        if (disposed) {
+        const workspace = target.workspace === true || target.sy === true;
+        const resolved = workspace ? await resolveWorkspaceFile(target.link) : await resolveAsset(target.link);
+        if (disposed || token !== loadToken) {
             return;
         }
         if (resolved.kind === "error") {
-            debug("resolve failed", {link, syDoc, message: resolved.message});
+            debug("resolve failed", {link: target.link, workspace, message: resolved.message});
             placeholder(t("openFailed", {message: resolved.message}), true);
             return;
         }
@@ -486,25 +553,25 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             placeholder(t("openFailed", {message: error instanceof Error ? error.message : String(error)}), true);
             return;
         }
-        if (disposed) {
+        if (disposed || token !== loadToken) {
             return;
         }
         eol = data.eol;
         bom = data.bom;
         language = rememberedLanguage(ref.link) ?? guessLanguage(ref.link);
         // .sy 预览只读，永远不会留下未保存的正文，也就不必问要不要恢复暂存
-        const stashed = !syDoc && settings().stashUnsaved ? stashedEntry(ref.link) : undefined;
+        const stashed = target.sy !== true && settings().stashUnsaved ? stashedEntry(ref.link) : undefined;
         const doc = stashed && stashed.text !== data.text
             ? await askRestore(ref.link, stashed.text, data.text, t)
             : data.text;
-        if (disposed) {
+        if (disposed || token !== loadToken) {
             return;
         }
         dirty = doc !== data.text;
         // 高亮引擎没就绪就直接建编辑器的话，首次渲染会是无色的，
         // 而 StateField 只在文档变化时才重算，用户要敲一下才会看到颜色。
         await loadHljs();
-        if (disposed) {
+        if (disposed || token !== loadToken) {
             return;
         }
         mount.innerHTML = "";
@@ -556,7 +623,41 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             cursor: cursor?.anchor,
             length: data.text.length,
         });
-    })();
+    };
+
+    /**
+     * 切到候选表里的另一个文件。
+     *
+     * 未保存的改动按关闭的规矩处理：与关闭页签共用同一条确认，取消就留在原文件上。
+     */
+    const switchTo = (file: IViewFile): void => {
+        if (file.link === current.link) {
+            return;
+        }
+        confirmClose(tab, t, settings, () => {
+            // 上一个文件的光标位置照旧记住，切回来还在原处
+            if (editor && settings().restoreCursor) {
+                rememberCursor(current.link, readCursor(editor));
+            }
+            editor?.destroy();
+            editor = undefined;
+            host.onSwitch?.(file);
+            void load(file);
+        });
+    };
+
+    if (switchable && titleElement) {
+        titleElement.addEventListener("click", () => openFileMenu(titleElement, files, current.link, switchTo));
+        // 它是 role="button"，键盘也要能开
+        titleElement.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                titleElement.click();
+            }
+        });
+    }
+
+    void load(current);
 
     return tab;
 }

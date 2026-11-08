@@ -12,6 +12,7 @@
   "openFailed": "无法打开该文件：{message}",
   "tooLarge": "该文件为 {size}，超过本插件 {limit} MB 的上限，可以在设置调整限制",
   "languageLabel": "语法高亮语言",
+  "switchFile": "切换文件",
   "languageSearch": "搜索语言",
   "languageEmpty": "没有匹配的语言",
   "switchToPreview": "切换到预览",

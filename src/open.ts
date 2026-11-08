@@ -35,6 +35,7 @@ import {openPopupEditor} from "./popup";
 import {baseName, config, stripQuery} from "./util";
 import {ICON_TAB} from "./icons";
 import type {T} from "./i18n";
+import type {IViewFile} from "./view";
 
 /**
  * 页签类型。
@@ -130,6 +131,44 @@ export function openEditor(deps: IOpenDeps, link: string): void {
             // 页签标题只放文件名：资源链接恒为 assets/<文件名>，带上目录不会增加区分度
             title: link.slice("assets/".length),
             data: {link},
+        },
+    });
+}
+
+/**
+ * 打开一组文件里的一个，操作条上的标题可以点开下拉切换。
+ *
+ * 只有需要「在一个窗口里改好几个同类文件」的调用方会用到（比如 prettier 的配置与忽略文件）；
+ * 默认的打开入口没有下拉。三种宿主形态都支持：页签、浮层、移动端全屏对话框。
+ */
+export function openFileList(deps: IOpenDeps, files: IViewFile[], start?: string): void {
+    const target = files.find((file) => file.link === start) ?? files[0];
+    if (!target) {
+        return;
+    }
+    const data = {link: target.link, workspace: target.workspace, sy: target.sy};
+    if (isMobileFrontend()) {
+        openMobileEditor(deps, data, target.title, files);
+        return;
+    }
+    if (usesPopup(deps.settings())) {
+        debug("open file list in popup", target.link);
+        openPopupEditor(deps, data, target.title, files);
+        return;
+    }
+    if (focusExistingTab(deps.plugin, target.link)) {
+        debug("open file list: focus the open tab", target.link);
+        return;
+    }
+    debug("open file list in tab", target.link);
+    void openTab({
+        app: deps.app,
+        custom: {
+            id: deps.plugin.name + TAB_TYPE,
+            icon: ICON_TAB,
+            title: target.title,
+            // 候选表跟着 data 走：宿主重启后由同一份 data 重新 init，下拉因此还在
+            data: {...data, files},
         },
     });
 }

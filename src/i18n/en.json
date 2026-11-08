@@ -12,6 +12,7 @@
   "openFailed": "Cannot open this file: {message}",
   "tooLarge": "The file is {size}, over the {limit} MB limit of this plugin; raise the limit in the settings",
   "languageLabel": "Syntax highlighting language",
+  "switchFile": "Switch file",
   "languageSearch": "Search languages",
   "languageEmpty": "No matching language",
   "switchToPreview": "Switch to preview",

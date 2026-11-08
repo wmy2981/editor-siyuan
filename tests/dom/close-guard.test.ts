@@ -4,7 +4,8 @@ import {Plugin, __setActiveTab, __setFrontend} from "../support/siyuan";
 import {installConfig, makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
 import {openConfirmDialog} from "../../src/dialog";
-import {confirmClose, registerCloseGuard} from "../../src/close-guard";
+import {registerCloseGuard} from "../../src/close-guard";
+import {confirmClose} from "../../src/unsaved";
 
 const {tabs} = vi.hoisted(() => ({tabs: [] as any[]}));
 

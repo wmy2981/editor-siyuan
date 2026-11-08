@@ -15,6 +15,7 @@ export interface IMenu {
     iconHTML?: string;
     accelerator?: string;
     disabled?: boolean;
+    current?: boolean;
     type?: string;
     click?: () => void;
     bind?: (element: HTMLElement) => void;
@@ -128,6 +129,9 @@ export class Menu {
         }
         if (item.disabled) {
             element.classList.add("b3-menu__item--disabled");
+        }
+        if (item.current) {
+            element.classList.add("b3-menu__item--selected");
         }
         this.element.append(element);
         item.bind?.(element);

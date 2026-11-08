@@ -2,7 +2,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {Dialog} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {confirmClose} from "../../src/close-guard";
+import {confirmClose} from "../../src/unsaved";
 import {openPopupEditor} from "../../src/popup";
 
 const {state} = vi.hoisted(() => ({
@@ -13,7 +13,7 @@ vi.mock("../../src/view", () => ({
     createView: vi.fn(() => state.view),
     tabFor: vi.fn(() => state.existing),
 }));
-vi.mock("../../src/close-guard", () => ({confirmClose: vi.fn()}));
+vi.mock("../../src/unsaved", () => ({confirmClose: vi.fn()}));
 vi.mock("../../src/dialog", () => ({confirmDialogOpen: vi.fn(() => state.confirmOpen)}));
 
 const t = makeT({});
@@ -90,7 +90,14 @@ describe("openPopupEditor", () => {
         const dialog = Dialog.instances[0];
         const mount = dialog.element.querySelector(".editor-siyuan-popup__mount");
         expect(createView).toHaveBeenCalledWith(
-            {element: mount, data: {link: "assets/a.txt", sy: true}},
+            {
+                element: mount,
+                data: {link: "assets/a.txt", sy: true},
+                // 没有候选文件：文件名只在标题栏里，操作条上不重复
+                title: undefined,
+                files: undefined,
+                onSwitch: expect.any(Function),
+            },
             t,
             deps.settings,
         );

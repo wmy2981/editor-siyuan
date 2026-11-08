@@ -14,7 +14,7 @@
 import {getActiveTab, type Custom, type Plugin} from "siyuan";
 import {config} from "./util";
 import {allTabs, tabFor, type IEditorTab} from "./view";
-import {openConfirmDialog} from "./dialog";
+import {confirmClose} from "./unsaved";
 import {isBrowserFrontend, isMobileFrontend} from "./frontend";
 import type {Settings} from "./config";
 import type {T} from "./i18n";
@@ -156,56 +156,6 @@ function guardBeforeUnload(): void {
         // 现代浏览器只认 preventDefault；更老的实现要求 returnValue 非空才弹框
         event.preventDefault();
         event.returnValue = "";
-    });
-}
-
-/** 关闭确认要问的对象：页签视图与移动端对话框视图都满足它。 */
-export interface IClosable {
-    readonly link: string;
-    isDirty(): boolean;
-    save(): Promise<boolean>;
-    discard(): void;
-}
-
-/**
- * 关闭前的确认。
- *
- * 页签的关闭控件（本文件的拦截）与移动端对话框的关闭按钮（mobile.ts）共用这一条：
- * 有未保存改动且设置里要求确认时先问，用户点「保存」并保存成功、或点「不保存」之后才 proceed。
- */
-export function confirmClose(view: IClosable, t: T, settings: () => Settings, proceed: () => void): void {
-    if (!view.isDirty() || !settings().confirmOnClose) {
-        proceed();
-        return;
-    }
-    openConfirmDialog({
-        title: t("closeTitle"),
-        text: t("closeBody", {file: view.link.slice("assets/".length)}),
-        cancelLabel: t("cancel"),
-        onCancel: () => {
-            // 取消：关闭动作已经被拦下，什么都不做即可
-        },
-        actions: [
-            {
-                label: t("closeDiscard"),
-                danger: true,
-                onClick: () => {
-                    view.discard();
-                    proceed();
-                },
-            },
-            {
-                label: t("save"),
-                primary: true,
-                onClick: () => {
-                    void view.save().then((ok) => {
-                        if (ok) {
-                            proceed();
-                        }
-                    });
-                },
-            },
-        ],
     });
 }
 

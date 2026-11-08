@@ -10,8 +10,8 @@
  * confirmClose。
  */
 import {Dialog} from "siyuan";
-import {confirmClose} from "./close-guard";
-import {createView, tabFor, type IEditorTab} from "./view";
+import {confirmClose} from "./unsaved";
+import {createView, tabFor, type IEditorTab, type IViewFile} from "./view";
 import type {Settings} from "./config";
 import type {T} from "./i18n";
 
@@ -27,8 +27,9 @@ export interface IMobileOpenDeps {
  */
 export function openMobileEditor(
     deps: IMobileOpenDeps,
-    data: {link: string; sy?: boolean},
+    data: {link: string; sy?: boolean; workspace?: boolean},
     title: string,
+    files?: IViewFile[],
 ): void {
     const opened = tabFor(data.link);
     if (opened) {
@@ -63,6 +64,11 @@ export function openMobileEditor(
         element: mount,
         data,
         title,
+        files,
+        onSwitch: (file) => {
+            // 没有标题栏，标题就在操作条上（由视图自己更新），这里只同步给读屏
+            container.setAttribute("aria-label", file.title);
+        },
         onClose: () => {
             confirmClose(view!, deps.t, deps.settings, () => {
                 view?.dispose();

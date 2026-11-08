@@ -16,9 +16,9 @@
  *   所以 Esc 必须在捕获阶段拦下，否则有未保存改动时能绕过确认直接丢掉浮层。
  */
 import {Dialog} from "siyuan";
-import {confirmClose} from "./close-guard";
 import {confirmDialogOpen} from "./dialog";
-import {createView, tabFor, type IEditorTab} from "./view";
+import {confirmClose} from "./unsaved";
+import {createView, tabFor, type IEditorTab, type IViewFile} from "./view";
 import type {Settings} from "./config";
 import type {T} from "./i18n";
 
@@ -34,8 +34,9 @@ export interface IPopupDeps {
  */
 export function openPopupEditor(
     deps: IPopupDeps,
-    data: {link: string; sy?: boolean},
+    data: {link: string; sy?: boolean; workspace?: boolean},
     title: string,
+    files?: IViewFile[],
 ): void {
     const opened = tabFor(data.link);
     if (opened) {
@@ -94,6 +95,18 @@ export function openPopupEditor(
     dialog.element.querySelector(".b3-dialog__scrim")?.addEventListener("click", () => requestClose());
 
     const mount = dialog.element.querySelector<HTMLElement>(".editor-siyuan-popup__mount")!;
-    // 文件名在标题栏里，操作条不必再画一遍，所以不传 title
-    view = createView({element: mount, data}, deps.t, deps.settings);
+    // 文件名平时只放在标题栏里，操作条不重复；给了候选文件时操作条上才多一条可点的标题，
+    // 那是下拉的触发器。切换文件时两条标题一起改。
+    view = createView({
+        element: mount,
+        data,
+        title: files && files.length > 1 ? title : undefined,
+        files,
+        onSwitch: (file) => {
+            const header = dialog.element.querySelector<HTMLElement>(".b3-dialog__header");
+            if (header) {
+                header.textContent = file.title;
+            }
+        },
+    }, deps.t, deps.settings);
 }

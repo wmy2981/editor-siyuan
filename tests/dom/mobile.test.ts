@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {Dialog} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {confirmClose} from "../../src/close-guard";
+import {confirmClose} from "../../src/unsaved";
 import {openMobileEditor} from "../../src/mobile";
 
 const {state} = vi.hoisted(() => ({
@@ -13,7 +13,7 @@ vi.mock("../../src/view", () => ({
     createView: vi.fn(() => state.view),
     tabFor: vi.fn(() => state.existing),
 }));
-vi.mock("../../src/close-guard", () => ({confirmClose: vi.fn()}));
+vi.mock("../../src/unsaved", () => ({confirmClose: vi.fn()}));
 
 const t = makeT({});
 const settings = makeSettings();

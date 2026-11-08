@@ -19,7 +19,7 @@ import {registerCloseGuard} from "./close-guard";
 import {registerCodeMenu} from "./code-menu";
 import {watchCodeTheme} from "./theme";
 import {config} from "./util";
-import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig, type IEditorTab} from "./view";
+import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig, type IEditorTab, type IViewFile} from "./view";
 
 export default class EditorPlugin extends Plugin {
     private settings: Settings = {...DEFAULT_SETTINGS};
@@ -70,7 +70,25 @@ export default class EditorPlugin extends Plugin {
             type: TAB_TYPE,
             init() {
                 // 页签头自己显示标题，关闭由 close-guard 负责，所以这里只给容器与数据
-                plugin.views.set(this, createView({element: this.element, data: this.data}, plugin.t, () => plugin.settings));
+                const data = this.data as {
+                    link?: string;
+                    sy?: boolean;
+                    workspace?: boolean;
+                    files?: IViewFile[];
+                };
+                const files = data.files ?? [];
+                plugin.views.set(this, createView({
+                    element: this.element,
+                    data,
+                    // 给了候选文件时操作条上再画一条可点的标题：页签头那份改不动，下拉只能挂在这里
+                    title: files.length > 1 ? (this.tab?.title ?? String(data.link ?? "")) : undefined,
+                    files,
+                    onSwitch: (file) => {
+                        // 页签头与 data 一起改：关闭确认与「已经打开就聚焦」都靠 data.link
+                        data.link = file.link;
+                        this.tab?.updateTitle(file.title);
+                    },
+                }, plugin.t, () => plugin.settings));
             },
             beforeDestroy() {
                 plugin.views.get(this)?.dispose();

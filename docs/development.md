@@ -16,6 +16,7 @@ this repository is left out.
 ## Host
 
 - A custom tab's id must be exactly `plugin.name + type`: on the next start SiYuan deletes custom tabs whose id has no registered factory.
+- A view that switches the file it shows must update two host-side things: the tab title through `tab.updateTitle`, and `custom.data.link`, which is what the close guard and the "already open, just focus it" check read. The mobile and floating-window hosts instead own a dialog title bar, so they pass `onSwitch` to rewrite it.
 - On mobile, `addTab` and `openTab` are compiled out entirely, so the editor has to be mounted in a `Dialog`. Keeping one view for both hosts is why it takes an `IViewHost`.
 - A tab close **cannot** be cancelled from `beforeDestroy`: it is synchronous and its return value is ignored, while SiYuan's confirmation dialog is asynchronous. That is why the close button, the close hotkey and tab double-click are intercepted in the capture phase, and why every other close path falls back to stashing the buffer. Don't fold it back into the lifecycle callback.
 - SiYuan's global keydown destroys the topmost dialog unconditionally, so any dialog that has to confirm before closing must take `Escape` in the capture phase — and must skip it while a confirmation of its own is open.

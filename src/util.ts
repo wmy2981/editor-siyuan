@@ -34,3 +34,37 @@ export function stripQuery(path: string): string {
     const cut = path.search(/[?#]/);
     return cut < 0 ? path : path.slice(0, cut);
 }
+
+/**
+ * 写入剪贴板。
+ *
+ * 先走异步剪贴板：它只在安全上下文（Electron、HTTPS、localhost）里存在，
+ * 局域网 http 访问时没有它，退回一个临时 textarea 加 execCommand——思源自己
+ * 在非安全上下文里也是这么做的。返回是否写入成功。
+ */
+export async function writeClipboard(text: string): Promise<boolean> {
+    if (navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            // 权限被拒或窗口失焦：退回下面的兜底
+        }
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    // 不能用 fn__none 或 display:none：不可见元素选不中，execCommand 会失败
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "-9999px";
+    document.body.append(textarea);
+    textarea.select();
+    try {
+        return document.execCommand("copy");
+    } catch {
+        return false;
+    } finally {
+        textarea.remove();
+    }
+}

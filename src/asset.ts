@@ -139,6 +139,12 @@ export async function resolveAsset(link: string): Promise<TResolveResult> {
     }
 }
 
+/** 工作区相对路径 → 工作区内的绝对路径（正斜杠）；拿不到工作区位置时返回 undefined。 */
+export async function absolutePath(apiPath: string): Promise<string | undefined> {
+    const root = await workspaceDir();
+    return root ? `${root}${apiPath}` : undefined;
+}
+
 /**
  * 定位工作区里的普通文本文件，目前只有 .sy 文档预览走这条路径。
  *

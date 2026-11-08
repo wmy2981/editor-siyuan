@@ -432,11 +432,11 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
     });
     // 更多菜单右对齐到按钮：思源自己的图标按钮菜单都是这么开的（isLeft 在 openMoreMenu 里给）
     moreIcon.addEventListener("click", () => {
-        if (!editor) {
+        if (!editor || !ref) {
             return;
         }
         const rect = moreIcon.getBoundingClientRect();
-        openMoreMenu({view: editor, language, link, readOnly, t}, rect.right, rect.bottom);
+        openMoreMenu({view: editor, language, link: ref.link, apiPath: ref.apiPath, readOnly, t}, rect.right, rect.bottom);
     });
     // 移动端的关闭按钮：确认与销毁都由宿主负责，视图只把点击交出去
     closeIcon?.addEventListener("click", () => host.onClose?.());

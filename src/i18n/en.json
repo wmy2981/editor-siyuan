@@ -109,6 +109,9 @@
   "close": "Close",
   "formatCode": "Format code",
   "minifyCode": "Minify code",
+  "copyFilePath": "Copy file path",
+  "copied": "Copied",
+  "copyFailed": "Cannot write to the clipboard",
   "formatFailed": "Formatting failed",
   "minifyFailed": "Minification failed",
   "pasteFailed": "Cannot read the clipboard"

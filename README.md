@@ -37,7 +37,9 @@ Manually: unzip `package.zip` into `<workspace>/data/plugins/editor-siyuan/` and
 
 ## Formatting and minification
 
-The **More** menu at the right end of the action bar holds **Format code** and **Minify code**. Both rewrite the whole document, both only touch the undo stack until you save, and `Ctrl+Z` takes either of them back in one step. They are unavailable in preview mode.
+The **More** menu at the right end of the action bar is split into two groups: **Copy** and **Copy file path** first, then **Format code** and **Minify code**. Copy takes the whole document; Copy file path takes the file's absolute path inside the workspace.
+
+Both format and minify rewrite the whole document, both only touch the undo stack until you save, and `Ctrl+Z` takes either of them back in one step. They are unavailable in preview mode.
 
 A note's code blocks get the same two entries under **More - Plugins**, acting on that one block and again only touching the undo stack. The block's own language decides what is offered: languages this plugin does not implement (Python, Go and so on) get no entries at all, and in a read-only document they are greyed out. The whole thing can be turned off in the settings.
 
@@ -69,6 +71,7 @@ These are consequences of the plugin API, not oversights.
 - **Assets in encrypted notebooks are refused.** The kernel resolves them to a temporary plaintext copy; writing that copy back would silently discard the change.
 - **Large files settle a step late.** If one full highlight pass exceeds 8 ms it switches to re-highlighting once you stop typing, so colours land a moment later; formatting and minification run on the main thread, so a file of a few MB stalls the UI for a few seconds.
 - **Scheme colours follow highlight.js tokens, not VSCode's semantic ones.** `if` and `const` share one keyword colour because the engine does not separate control flow from declarations, and JSON keys, HTML attribute names and CSS properties share one property colour. Same palettes, coarser granularity than the real editors.
+- **Copy file path falls back to the workspace-relative path.** The kernel hides absolute paths from requests it does not recognise as the app, and a non-administrator role cannot ask for the workspace location; the menu then copies `/data/...` instead of the full path.
 - **No detection of outside changes.** If another program edits the file, only reopening the editor shows it.
 - **Completion is word-level.** It offers the current language's keywords and words already in the document. There is no syntax tree, so no type-aware, member or cross-file completion.
 - **Two browser paths are left to the browser.** `Ctrl+W` closes the browser's own tab, where neither the close confirmation nor the stash can run — all the plugin can do is let `beforeunload` raise the browser's generic prompt; outside HTTPS the context menu's Paste entry is greyed out, while `Ctrl+V` in the document itself still works.

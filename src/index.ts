@@ -14,6 +14,7 @@ import {ICONS} from "./icons";
 import {makeT, type T} from "./i18n";
 import {loadHljs} from "./hljs";
 import {registerOpenHandlers, TAB_TYPE} from "./open";
+import {migratePrettierConfig, openPrettierConfig} from "./prettier-config";
 import {openSettingsPanel} from "./settings-panel";
 import {registerCloseGuard} from "./close-guard";
 import {registerCodeMenu} from "./code-menu";
@@ -64,6 +65,8 @@ export default class EditorPlugin extends Plugin {
         watchEditorConfig(this, () => this.settings);
         // 思源只在渲染过代码块后才加载 highlight.js，这里先把它备好，第一次打开页签就能直接上色
         void loadHljs();
+        // 升级过渡：把 prettier 配置按当前思源的缩进默认值建出来，旧位置的文件也搬过来
+        void migratePrettierConfig();
 
         const plugin = this;
         this.addTab({
@@ -139,6 +142,9 @@ export default class EditorPlugin extends Plugin {
             onForget: () => {
                 forgetMemories();
                 showMessage(this.t("forgotten"), 3000);
+            },
+            onPrettier: () => {
+                openPrettierConfig({app: this.app, plugin: this, t: this.t, settings: () => this.settings});
             },
         });
     }

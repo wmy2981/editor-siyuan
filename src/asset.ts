@@ -56,7 +56,7 @@ export interface IAssetText {
 }
 
 export type TResolveResult =
-    | {kind: "ok"; ref: IAssetRef}
+    | {kind: "ok"; ref: IAssetRef; missing?: boolean}
     | {kind: "error"; message: string};
 
 /** 绝对路径统一成正斜杠、去掉尾部分隔符，好做前缀比较。 */
@@ -146,14 +146,16 @@ export async function absolutePath(apiPath: string): Promise<string | undefined>
 }
 
 /**
- * 定位工作区里的普通文本文件，目前只有 .sy 文档预览走这条路径。
+ * 定位工作区里的普通文本文件，目前只有 .sy 文档预览与 prettier 配置文件走这条路径。
  *
  * 与 assets 链接不同，调用方给过来的已经是工作区相对路径（`/data/<笔记本ID>/<路径>.sy`），
  * 不需要 resolveAssetPath 再解析一次。体积仍然要事先问过内核：读接口是整体读入内存的，
  * 超限的文件一旦开始读就拦不住。statAsset 只认 assets 链接与本地绝对路径，所以这里
  * 把相对路径拼回 `file://` URL——内核会校验它确实落在工作区内。
+ *
+ * allowMissing 用于配置文件：第一次编辑时它还不存在，按空文件打开，保存时由 putFile 建出来。
  */
-export async function resolveWorkspaceFile(apiPath: string): Promise<TResolveResult> {
+export async function resolveWorkspaceFile(apiPath: string, allowMissing = false): Promise<TResolveResult> {
     const root = await workspaceDir();
     if (!apiPath.startsWith("/data/") || !root) {
         return {kind: "error", message: "not a workspace file"};
@@ -162,12 +164,30 @@ export async function resolveWorkspaceFile(apiPath: string): Promise<TResolveRes
     try {
         const stat = await postJson<{size: number}>(STAT_ASSET, {path: `file://${absolute}`});
         if (stat.code !== 0) {
+            if (allowMissing) {
+                return {kind: "ok", ref: {link: apiPath, apiPath, size: 0}, missing: true};
+            }
             return {kind: "error", message: stat.msg || `code ${stat.code}`};
         }
         return {kind: "ok", ref: {link: apiPath, apiPath, size: stat.data.size}};
     } catch (error) {
         return {kind: "error", message: error instanceof Error ? error.message : String(error)};
     }
+}
+
+/** 读取工作区里的文本文件；读不到（通常是还没创建）时返回 undefined。 */
+export async function readWorkspaceText(apiPath: string): Promise<IAssetText | undefined> {
+    try {
+        return await readAssetText({link: apiPath, apiPath, size: 0});
+    } catch {
+        // 配置文件第一次使用时不存在，内核按 202 + 信封回一个错误；当成空文件处理
+        return undefined;
+    }
+}
+
+/** 写工作区里的文本文件（不存在就创建）；成功返回 undefined，失败返回可展示的错误信息。 */
+export async function writeWorkspaceText(apiPath: string, text: string): Promise<string | undefined> {
+    return await writeAssetText({link: apiPath, apiPath, size: 0}, {text, eol: "\n", bom: false});
 }
 
 export async function readAssetText(ref: IAssetRef): Promise<IAssetText> {

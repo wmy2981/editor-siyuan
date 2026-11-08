@@ -3,6 +3,7 @@ import {Menu, showMessage} from "../support/siyuan";
 import {makeT} from "../../src/i18n";
 import {openMoreMenu} from "../../src/more-menu";
 import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
+import {prepareFormat} from "../../src/prettier-config";
 
 vi.mock("../../src/format", () => ({
     canFormat: vi.fn(),
@@ -10,6 +11,7 @@ vi.mock("../../src/format", () => ({
     formatText: vi.fn(),
     minifyText: vi.fn(),
 }));
+vi.mock("../../src/prettier-config", () => ({prepareFormat: vi.fn()}));
 
 const t = makeT({
     copy: "复制",
@@ -20,6 +22,7 @@ const t = makeT({
     minifyCode: "压缩",
     formatFailed: "格式化失败",
     minifyFailed: "压缩失败",
+    prettierIgnored: "该文件在 .prettierignore 里，不做格式化",
 });
 
 interface IFakeView {
@@ -76,6 +79,7 @@ beforeEach(() => {
     vi.mocked(canMinify).mockReturnValue(true);
     vi.mocked(formatText).mockResolvedValue("formatted");
     vi.mocked(minifyText).mockResolvedValue("minified");
+    vi.mocked(prepareFormat).mockResolvedValue({});
     delete (navigator as any).clipboard;
 });
 
@@ -154,14 +158,27 @@ describe("openMoreMenu", () => {
     });
 
     it("格式化成功后整篇替换，并保留一次撤销", async () => {
+        vi.mocked(prepareFormat).mockResolvedValue({printWidth: 100});
         const {view} = fakeView("const a=1");
         openMoreMenu({view, language: "javascript", link: "assets/a.js", apiPath: "/data/assets/a.js", readOnly: false, t}, 0, 0);
         lastMenu().items[2].click!();
         await vi.waitFor(() => expect(view.dispatch).toHaveBeenCalledTimes(1));
-        expect(formatText).toHaveBeenCalledWith("javascript", "assets/a.js", "const a=1");
+        // 自定义配置按文件路径读：ignore 只看得到真实路径
+        expect(prepareFormat).toHaveBeenCalledWith(t, "/data/assets/a.js");
+        expect(formatText).toHaveBeenCalledWith("javascript", "assets/a.js", "const a=1", {printWidth: 100});
         expect(view.dispatch).toHaveBeenCalledWith({
             changes: {from: 0, to: "const a=1".length, insert: "formatted"},
         });
+    });
+
+    it("被 .prettierignore 排除时跳过并提示", async () => {
+        vi.mocked(prepareFormat).mockResolvedValue(undefined);
+        const {view} = fakeView("const a=1");
+        openMoreMenu({view, language: "javascript", link: "assets/a.js", apiPath: "/data/assets/a.js", readOnly: false, t}, 0, 0);
+        lastMenu().items[2].click!();
+        await vi.waitFor(() => expect(showMessage).toHaveBeenCalledWith("该文件在 .prettierignore 里，不做格式化", 4000));
+        expect(formatText).not.toHaveBeenCalled();
+        expect(view.dispatch).not.toHaveBeenCalled();
     });
 
     it("压缩成功后整篇替换", async () => {

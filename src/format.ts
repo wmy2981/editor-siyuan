@@ -22,7 +22,7 @@ import * as prettierMarkdown from "prettier/plugins/markdown";
 import {minify as uglify} from "uglify-js/tools/exports.js";
 import {minify as csso} from "csso";
 import {extensionOf} from "./config";
-import {baseName, config} from "./util";
+import {baseName} from "./util";
 
 /** prettier 的插件表；prettier 自己按 parser 名字挑，所以一次给全。 */
 const PLUGINS = [
@@ -37,12 +37,6 @@ const PLUGINS = [
 
 /** prettier.format 的选项类型；standalone 入口没有单独导出它。 */
 type TFormatOptions = NonNullable<Parameters<typeof prettier.format>[1]>;
-
-/** 缩进跟随思源的「Tab 空格数」；0 表示不转换，那就用真正的制表符。 */
-function indentOptions(): {useTabs: boolean; tabWidth: number} {
-    const tabSpaces = config().editor.codeTabSpaces;
-    return {useTabs: tabSpaces === 0, tabWidth: tabSpaces === 0 ? 4 : tabSpaces};
-}
 
 /**
  * hljs 语言 → prettier parser。
@@ -199,22 +193,33 @@ export const canFormat = (language: string, link: string): boolean =>
 export const canMinify = (language: string, link: string): boolean =>
     minifierFor(language, extensionOf(link)) !== undefined;
 
-/** 格式化整篇正文，返回新正文。 */
-export async function formatText(language: string, link: string, text: string): Promise<string> {
+/**
+ * 格式化整篇正文，返回新正文。
+ *
+ * 选项全部来自用户的 prettier 配置文件（见 prettier-config.ts）：插件不再在代码里兜一套缩进，
+ * 默认值已经随配置文件落盘，改与不改都在那一个文件里。`parser` 与 `plugins` 由语言决定，
+ * 配置改不动。
+ */
+export async function formatText(
+    language: string,
+    link: string,
+    text: string,
+    options: Record<string, unknown> = {},
+): Promise<string> {
     const parser = parserFor(language, extensionOf(link));
     if (!parser) {
         throw new Error(`no formatter for ${language}`);
     }
-    const options: TFormatOptions = {
+    const formatOptions = {
+        ...options,
         parser,
         plugins: PLUGINS,
-        ...indentOptions(),
-    };
+    } as TFormatOptions;
     if (parser === "typescript") {
         // .tsx 与 .ts 是两套语法（泛型箭头函数与 JSX 冲突），只能靠文件名区分
-        options.filepath = baseName(link);
+        formatOptions.filepath = baseName(link);
     }
-    return await prettier.format(text, options);
+    return await prettier.format(text, formatOptions);
 }
 
 /** 压缩整篇正文，返回新正文。实现是同步的，接口与 formatText 保持一致。 */

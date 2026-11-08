@@ -10,6 +10,7 @@ import {registerCodeMenu} from "../../src/code-menu";
 import {watchCodeTheme} from "../../src/theme";
 import {loadHljs} from "../../src/hljs";
 import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig} from "../../src/view";
+import {openPrettierConfig, migratePrettierConfig} from "../../src/prettier-config";
 
 vi.mock("../../src/settings-panel", () => ({openSettingsPanel: vi.fn()}));
 vi.mock("../../src/open", () => ({registerOpenHandlers: vi.fn(), TAB_TYPE: "textEditor"}));
@@ -17,6 +18,10 @@ vi.mock("../../src/close-guard", () => ({registerCloseGuard: vi.fn()}));
 vi.mock("../../src/code-menu", () => ({registerCodeMenu: vi.fn()}));
 vi.mock("../../src/theme", () => ({watchCodeTheme: vi.fn()}));
 vi.mock("../../src/hljs", () => ({loadHljs: vi.fn()}));
+vi.mock("../../src/prettier-config", () => ({
+    migratePrettierConfig: vi.fn(),
+    openPrettierConfig: vi.fn(),
+}));
 vi.mock("../../src/view", () => ({
     createView: vi.fn(),
     focusedTab: vi.fn(),
@@ -60,6 +65,8 @@ describe("onload", () => {
         expect(registerCloseGuard).toHaveBeenCalledWith(expect.objectContaining({plugin}));
         expect(registerCodeMenu).toHaveBeenCalledWith(expect.objectContaining({plugin}));
         expect(loadHljs).toHaveBeenCalledTimes(1);
+        // 升级过渡：加载时就把 prettier 配置建出来（或搬过来）
+        expect(migratePrettierConfig).toHaveBeenCalledTimes(1);
     });
 
     it("没有存档时使用默认设置", async () => {
@@ -178,6 +185,17 @@ describe("openSetting", () => {
     it("用插件显示名打开设置面板", () => {
         plugin.openSetting();
         expect(panelOptions()).toMatchObject({title: "文本编辑器", settings: plugin.settings});
+    });
+
+    it("设置面板的 Prettier 配置按钮打开配置编辑器", () => {
+        plugin.openSetting();
+        panelOptions().onPrettier();
+        expect(openPrettierConfig).toHaveBeenCalledWith({
+            app: plugin.app,
+            plugin,
+            t: expect.any(Function),
+            settings: expect.any(Function),
+        });
     });
 
     it("保存后写盘、立即生效并提示", async () => {

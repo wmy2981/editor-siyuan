@@ -332,9 +332,24 @@ describe("加载文件", () => {
         });
     });
 
+    it("工作区文件还不存在时按空文件打开，保存时再建", async () => {
+        const path = "/data/.prettierrc.json";
+        vi.mocked(resolveWorkspaceFile).mockResolvedValue({
+            kind: "ok",
+            ref: {link: path, apiPath: path, size: 0},
+            missing: true,
+        });
+        const files = [{link: path, title: ".prettierrc.json", workspace: true, allowMissing: true}];
+        const tab = await openReady(host({link: path, workspace: true}, {title: ".prettierrc.json", files}));
+        expect(resolveWorkspaceFile).toHaveBeenCalledWith(path, true);
+        expect(readAssetText).not.toHaveBeenCalled();
+        expect(lastOptions.doc).toBe("");
+        expect(tab.element.querySelector(".editor-siyuan__placeholder")).toBeNull();
+    });
+
     it(".sy 预览走工作区文件接口并强制只读", async () => {
         const tab = await openReady(host({link: SY_REF.link, sy: true}));
-        expect(resolveWorkspaceFile).toHaveBeenCalledWith(SY_REF.link);
+        expect(resolveWorkspaceFile).toHaveBeenCalledWith(SY_REF.link, false);
         expect(resolveAsset).not.toHaveBeenCalled();
         expect(lastOptions.readOnly).toBe(true);
         expect(lastOptions.onContextMenu).toBeTypeOf("function");
@@ -769,7 +784,7 @@ describe("标题下拉切换文件", () => {
         expect(tabFor("/data/b.json")).toBe(tab);
         expect(tabFor("/data/a.json")).toBeUndefined();
         expect(openConfirmDialog).not.toHaveBeenCalled();
-        expect(resolveWorkspaceFile).toHaveBeenLastCalledWith("/data/b.json");
+        expect(resolveWorkspaceFile).toHaveBeenLastCalledWith("/data/b.json", false);
     });
 
     it("有未保存改动时先问，取消就留在原文件", async () => {

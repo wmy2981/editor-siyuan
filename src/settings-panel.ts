@@ -40,6 +40,8 @@ export interface ISettingsPanelOptions {
     onSave: (settings: Settings) => void;
     /** 清除语言、光标位置与暂存的记忆。 */
     onForget: () => void;
+    /** 打开 prettier 配置文件的编辑器窗口。 */
+    onPrettier: () => void;
 }
 
 /**
@@ -152,6 +154,19 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
 
     addSwitch(t("codeBlockMenu"), t("codeBlockMenuTip"), draft.codeBlockMenu, (checked) => {
         draft.codeBlockMenu = checked;
+    });
+
+    // prettier 的配置不是一个开关，而是一份要编辑的文件，所以单独开一个窗口
+    setting.addItem({
+        title: t("prettierConfig"),
+        description: t("prettierConfigTip"),
+        createActionElement: () => {
+            const button = document.createElement("button");
+            button.className = "b3-button b3-button--outline fn__flex-center";
+            button.textContent = t("prettierConfigButton");
+            button.addEventListener("click", () => options.onPrettier());
+            return button;
+        },
     });
 
     // 文本域占整行（direction: row），下面再挂一个「恢复默认」按钮

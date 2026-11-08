@@ -1,6 +1,5 @@
 import {describe, expect, it} from "vitest";
 import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
-import {currentConfig} from "../support/env";
 
 describe("canFormat", () => {
     it("有 prettier parser 的语言与扩展名组合为真", () => {
@@ -60,20 +59,19 @@ describe("canMinify", () => {
 });
 
 describe("formatText", () => {
-    it("按思源的 Tab 空格数缩进", async () => {
-        currentConfig().editor.codeTabSpaces = 2;
+    it("没有选项时用 prettier 自己的默认缩进", async () => {
         expect(await formatText("javascript", "assets/a.js", "function f(){return 1}"))
             .toBe("function f() {\n  return 1;\n}\n");
     });
 
-    it("Tab 空格数为 0 时使用真正的制表符", async () => {
-        currentConfig().editor.codeTabSpaces = 0;
-        expect(await formatText("javascript", "assets/a.js", "function f(){return 1}"))
+    it("选项里的 tabWidth 与 useTabs 生效", async () => {
+        expect(await formatText("javascript", "assets/a.js", "function f(){return 1}", {tabWidth: 8, useTabs: false}))
+            .toBe("function f() {\n        return 1;\n}\n");
+        expect(await formatText("javascript", "assets/a.js", "function f(){return 1}", {useTabs: true}))
             .toBe("function f() {\n\treturn 1;\n}\n");
     });
 
     it("格式化 JavaScript", async () => {
-        currentConfig().editor.codeTabSpaces = 4;
         expect(await formatText("javascript", "assets/a.js", "const a={b:1}"))
             .toBe("const a = { b: 1 };\n");
     });
@@ -93,11 +91,11 @@ describe("formatText", () => {
     });
 
     it("格式化 CSS、SCSS 与 LESS", async () => {
-        expect(await formatText("css", "assets/a.css", "a{color:red}")).toBe("a {\n    color: red;\n}\n");
+        expect(await formatText("css", "assets/a.css", "a{color:red}")).toBe("a {\n  color: red;\n}\n");
         expect(await formatText("scss", "assets/a.scss", "$c:red;a{color:$c}"))
-            .toBe("$c: red;\na {\n    color: $c;\n}\n");
+            .toBe("$c: red;\na {\n  color: $c;\n}\n");
         expect(await formatText("less", "assets/a.less", "@c:red;a{color:@c}"))
-            .toBe("@c: red;\na {\n    color: @c;\n}\n");
+            .toBe("@c: red;\na {\n  color: @c;\n}\n");
     });
 
     it("格式化 HTML 与 Vue", async () => {
@@ -178,5 +176,18 @@ describe("minifyText", () => {
 
     it("JavaScript 语法错误时抛错", async () => {
         await expect(minifyText("javascript", "assets/a.js", "function (")).rejects.toThrow();
+    });
+});
+
+describe("formatText 的自定义配置", () => {
+    it("配置改不动 parser：按语言选的解析器仍然生效", async () => {
+        // parser 若真被改成 json，这段 JavaScript 会解析失败
+        expect(await formatText("javascript", "assets/a.js", "const a=1", {parser: "json"}))
+            .toBe("const a = 1;\n");
+    });
+
+    it("配置改不动 plugins：没有插件就解析不了", async () => {
+        expect(await formatText("javascript", "assets/a.js", "const a=1", {plugins: []}))
+            .toBe("const a = 1;\n");
     });
 });

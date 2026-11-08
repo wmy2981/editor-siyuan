@@ -43,6 +43,8 @@
 
 笔记里的代码块也有这两项，在代码块右上角的 **更多 - 插件** 子菜单里，改的是那一个代码块，同样只进撤销栈。按代码块自己的语言判断能不能做：本插件没实现的语言（Python、Go 之类）不出现这两项，只读文档里出现但置灰。可以在设置里关掉。
 
+**设置 - 插件 - Editor** 里有一行「Prettier 配置」，点「编辑配置」会打开一个编辑器窗口，标题可以点开下拉，在两个文件之间切换：`.prettierrc.json` 里是每次格式化都会用到的 prettier 选项，`.prettierignore` 里是 gitignore 风格的排除清单，命中的文件不格式化。两个文件都在插件的存储目录 `data/storage/petal/editor-siyuan/` 下；配置文件第一次使用时按默认值建出来（`{"tabWidth": 4, "useTabs": false}`，缩进取思源的「代码块 Tab 空格数」），之后格式化只认这个文件，想改结果就改它——只有 `parser` 与 `plugins` 始终由插件按语言决定。排除清单按工作区 `data/` 下的相对路径匹配。
+
 | 语言 | 格式化 | 压缩 |
 | --- | --- | --- |
 | JavaScript | 是 | 是 |
@@ -50,7 +52,7 @@
 | CSS | 是 | 是 |
 | TypeScript / TSX、SCSS、LESS、HTML / XML / Vue、YAML、Markdown | 是 | — |
 
-格式化用 [prettier](https://prettier.io/)。压缩 JavaScript 用 [uglify-js](https://github.com/mishoo/UglifyJS)，它会压缩并混淆局部变量名；压缩 CSS 用 [csso](https://github.com/css/csso)，只去注释与空白、不合并规则；压缩 JSON 直接走 `JSON.parse` + `JSON.stringify`，所以 JSONC 里的注释与尾随逗号会被去掉。缩进跟随思源的「代码块 Tab 空格数」。
+格式化用 [prettier](https://prettier.io/)。压缩 JavaScript 用 [uglify-js](https://github.com/mishoo/UglifyJS)，它会压缩并混淆局部变量名；压缩 CSS 用 [csso](https://github.com/css/csso)，只去注释与空白、不合并规则；压缩 JSON 直接走 `JSON.parse` + `JSON.stringify`，所以 JSONC 里的注释与尾随逗号会被去掉。缩进来自配置文件，默认值取思源的「代码块 Tab 空格数」。
 
 TypeScript、JSX、SCSS、LESS、HTML、YAML、Markdown 没有可靠的浏览器内压缩实现，所以只提供格式化。
 

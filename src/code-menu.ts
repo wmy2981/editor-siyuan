@@ -17,6 +17,7 @@
  */
 import {ProtyleMethod, showMessage, type IProtyle, type Plugin, type subMenu} from "siyuan";
 import {canFormat, canMinify, formatText, minifyText} from "./format";
+import {prepareFormat} from "./prettier-config";
 import {debug} from "./debug";
 import {guessLanguage} from "./language";
 import {ICON_TAB} from "./icons";
@@ -80,8 +81,9 @@ function addItems(
         void (async () => {
             const text = body.textContent ?? "";
             try {
+                // 代码块没有文件路径，所以不查 .prettierignore，只吃配置里的选项
                 const next = kind === "format"
-                    ? await formatText(target.language, target.link, text)
+                    ? await formatText(target.language, target.link, text, await prepareFormat(t))
                     : await minifyText(target.language, target.link, text);
                 const out = withTrailingNewline(next);
                 if (!block.isConnected) {

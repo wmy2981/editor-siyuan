@@ -6,6 +6,7 @@ import {makeT} from "../../src/i18n";
 import {ICON_TAB} from "../../src/icons";
 import {registerCodeMenu} from "../../src/code-menu";
 import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
+import {prepareFormat} from "../../src/prettier-config";
 
 vi.mock("../../src/format", () => ({
     canFormat: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("../../src/format", () => ({
     formatText: vi.fn(),
     minifyText: vi.fn(),
 }));
+vi.mock("../../src/prettier-config", () => ({prepareFormat: vi.fn()}));
 
 const t = makeT({
     formatCode: "格式化代码",
@@ -76,6 +78,7 @@ beforeEach(() => {
     vi.mocked(canMinify).mockReturnValue(true);
     vi.mocked(formatText).mockResolvedValue("formatted");
     vi.mocked(minifyText).mockResolvedValue("minified");
+    vi.mocked(prepareFormat).mockResolvedValue({});
 });
 
 describe("registerCodeMenu", () => {
@@ -178,7 +181,7 @@ describe("registerCodeMenu", () => {
         menu.items[0].click!();
         await vi.waitFor(() => expect(updateTransactionElement).toHaveBeenCalled());
 
-        expect(formatText).toHaveBeenCalledWith("javascript", "code.js", "const a=1");
+        expect(formatText).toHaveBeenCalledWith("javascript", "code.js", "const a=1", {});
         expect(body.textContent).toBe("formatted\n");
         expect(container.hasAttribute("data-render")).toBe(false);
         expect(updateTransactionElement).toHaveBeenCalledWith(block, oldHTML);

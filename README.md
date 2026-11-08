@@ -43,6 +43,8 @@ Both format and minify rewrite the whole document, both only touch the undo stac
 
 A note's code blocks get the same two entries under **More - Plugins**, acting on that one block and again only touching the undo stack. The block's own language decides what is offered: languages this plugin does not implement (Python, Go and so on) get no entries at all, and in a read-only document they are greyed out. The whole thing can be turned off in the settings.
 
+**Settings - Plugins - Editor** has a **Prettier configuration** row with an **Edit configuration** button. It opens an editor window on two files, switchable from the title: `.prettierrc.json` holds the prettier options used by every format, and `.prettierignore` takes gitignore-style patterns for files that must not be formatted. Both live in the plugin's data folder, `data/storage/petal/editor-siyuan/`; the config file is created on first use as `{"tabWidth": 4, "useTabs": false}` (taken from SiYuan's code block tab size), and formatting always reads it, so changing it is the only way to change the result — `parser` and `plugins` stay with the plugin. Ignore patterns are matched against paths relative to the workspace's `data/` folder.
+
 | Language | Format | Minify |
 | --- | --- | --- |
 | JavaScript | yes | yes |
@@ -50,7 +52,7 @@ A note's code blocks get the same two entries under **More - Plugins**, acting o
 | CSS | yes | yes |
 | TypeScript / TSX, SCSS, LESS, HTML / XML / Vue, YAML, Markdown | yes | — |
 
-Formatting uses [prettier](https://prettier.io/). JavaScript minification uses [uglify-js](https://github.com/mishoo/UglifyJS), which also mangles local variable names; CSS minification uses [csso](https://github.com/css/csso) — comments and whitespace only, no rule merging; JSON goes through `JSON.parse` + `JSON.stringify`, so comments and trailing commas in JSONC are dropped. Indentation follows SiYuan's code block tab size.
+Formatting uses [prettier](https://prettier.io/). JavaScript minification uses [uglify-js](https://github.com/mishoo/UglifyJS), which also mangles local variable names; CSS minification uses [csso](https://github.com/css/csso) — comments and whitespace only, no rule merging; JSON goes through `JSON.parse` + `JSON.stringify`, so comments and trailing commas in JSONC are dropped. Indentation comes from the config file, which starts at SiYuan's code block tab size.
 
 TypeScript, JSX, SCSS, LESS, HTML, YAML and Markdown have no dependable in-browser minifier, so they are format-only.
 

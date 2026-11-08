@@ -14,6 +14,7 @@ import {Menu, showMessage} from "siyuan";
 import type {EditorView} from "@codemirror/view";
 import {absolutePath} from "./asset";
 import {canFormat, canMinify, formatText, minifyText} from "./format";
+import {prepareFormat} from "./prettier-config";
 import {debug} from "./debug";
 import {writeClipboard} from "./util";
 import type {T} from "./i18n";
@@ -38,9 +39,19 @@ export function openMoreMenu(deps: IMoreMenuDeps, x: number, y: number): void {
             const doc = view.state.doc;
             const text = doc.toString();
             try {
-                const next = kind === "format"
-                    ? await formatText(language, link, text)
-                    : await minifyText(language, link, text);
+                let next: string;
+                if (kind === "format") {
+                    // 自定义配置与 .prettierignore 只影响格式化，压缩不读它们
+                    const options = await prepareFormat(t, apiPath);
+                    if (!options) {
+                        debug("format skipped", {link, reason: "listed in .prettierignore"});
+                        showMessage(t("prettierIgnored"), 4000);
+                        return;
+                    }
+                    next = await formatText(language, link, text, options);
+                } else {
+                    next = await minifyText(language, link, text);
+                }
                 if (view.state.doc !== doc) {
                     // 计算期间用户敲过字：放弃这次结果，不能覆盖掉刚输入的内容
                     debug(`${kind} discarded`, {link, reason: "document changed while running"});

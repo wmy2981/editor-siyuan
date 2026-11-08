@@ -118,6 +118,8 @@ export interface IViewFile {
     workspace?: boolean;
     /** 只读的 .sy 预览。 */
     sy?: boolean;
+    /** 工作区文件还不存在时按空文件打开（配置文件第一次编辑就是这种情况）。 */
+    allowMissing?: boolean;
 }
 
 /**
@@ -529,7 +531,9 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             return;
         }
         const workspace = target.workspace === true || target.sy === true;
-        const resolved = workspace ? await resolveWorkspaceFile(target.link) : await resolveAsset(target.link);
+        const resolved = workspace
+            ? await resolveWorkspaceFile(target.link, target.allowMissing === true)
+            : await resolveAsset(target.link);
         if (disposed || token !== loadToken) {
             return;
         }
@@ -539,19 +543,24 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
             return;
         }
         ref = resolved.ref;
-        debug("resolved", {link: ref.link, apiPath: ref.apiPath, size: ref.size});
-        if (ref.size > settings().maxSizeMB * 1024 * 1024) {
+        debug("resolved", {link: ref.link, apiPath: ref.apiPath, size: ref.size, missing: resolved.missing === true});
+        if (resolved.missing !== true && ref.size > settings().maxSizeMB * 1024 * 1024) {
             debug("too large", {size: ref.size, limitMB: settings().maxSizeMB});
             placeholder(t("tooLarge", {size: megabytes(ref.size), limit: settings().maxSizeMB}), true);
             return;
         }
         let data: IAssetText;
-        try {
-            data = await readAssetText(ref);
-        } catch (error) {
-            debug("read failed", ref.apiPath, error);
-            placeholder(t("openFailed", {message: error instanceof Error ? error.message : String(error)}), true);
-            return;
+        if (resolved.missing === true) {
+            // 还没有这个文件：按空文件打开，保存时由 putFile 建出来
+            data = {text: "", eol: "\n", bom: false};
+        } else {
+            try {
+                data = await readAssetText(ref);
+            } catch (error) {
+                debug("read failed", ref.apiPath, error);
+                placeholder(t("openFailed", {message: error instanceof Error ? error.message : String(error)}), true);
+                return;
+            }
         }
         if (disposed || token !== loadToken) {
             return;

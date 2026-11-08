@@ -25,6 +25,9 @@ const labels = {
     previewSyTip: "预览提示",
     codeBlockMenu: "代码块菜单",
     codeBlockMenuTip: "代码块菜单提示",
+    prettierConfig: "Prettier 配置",
+    prettierConfigTip: "配置提示",
+    prettierConfigButton: "编辑配置",
     extensions: "扩展名",
     extensionsTip: "扩展名提示",
     extensionsReset: "恢复默认",
@@ -79,7 +82,8 @@ const t = makeT(labels);
 function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
     const onSave = vi.fn();
     const onForget = vi.fn();
-    openSettingsPanel({title: "文本编辑器", t, settings: makeSettings(overrides), onSave, onForget});
+    const onPrettier = vi.fn();
+    openSettingsPanel({title: "文本编辑器", t, settings: makeSettings(overrides), onSave, onForget, onPrettier});
     const setting = Setting.instances[Setting.instances.length - 1];
     const dialog = setting.dialog!;
     const row = (title: string): HTMLElement => {
@@ -100,7 +104,7 @@ function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
         Array.from(dialog.element.querySelectorAll(".config-name")).map((item) => item.textContent);
     const save = (): void => (dialog.element.querySelector(".b3-button--text") as HTMLButtonElement).click();
     const cancel = (): void => (dialog.element.querySelector(".b3-button--cancel") as HTMLButtonElement).click();
-    return {setting, dialog, control, row, titles, save, cancel, onSave, onForget};
+    return {setting, dialog, control, row, titles, save, cancel, onSave, onForget, onPrettier};
 }
 
 /** 最后弹出来的对话框：二次确认框。 */
@@ -148,6 +152,7 @@ describe("openSettingsPanel", () => {
             labels.takeoverGesture,
             labels.previewSy,
             labels.codeBlockMenu,
+            labels.prettierConfig,
             labels.extensions,
             labels.maxSize,
             labels.confirmOnClose,
@@ -170,7 +175,7 @@ describe("openSettingsPanel", () => {
         __setFrontend("mobile");
         const {titles} = open();
         expect(titles()).not.toContain(labels.takeoverGesture);
-        expect(titles()).toHaveLength(17);
+        expect(titles()).toHaveLength(18);
     });
 
     it("移动端与独立窗口不声明形态选项", () => {
@@ -448,6 +453,14 @@ describe("openSettingsPanel", () => {
         cancelDialog(lastDialog());
         expect(onForget).not.toHaveBeenCalled();
         expect(button.textContent).toBe("清除 1 条");
+    });
+
+    it("Prettier 配置按钮打开配置编辑器", () => {
+        const {control, onPrettier} = open();
+        const button = control(labels.prettierConfig) as HTMLButtonElement;
+        expect(button.textContent).toBe("编辑配置");
+        button.click();
+        expect(onPrettier).toHaveBeenCalledTimes(1);
     });
 
     it("取消不保存", () => {

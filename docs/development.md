@@ -30,6 +30,15 @@ this repository is left out.
 - Plugin load seeds the config too, so an upgrade from a version without one leaves the user with the same indentation as before plus a file they can edit. Files that earlier builds wrote to the workspace's `data/` root are copied into the plugin folder when the new location has no content; the originals are left alone.
 - Ignore patterns are matched against the path relative to `data/` (`assets/a.js`), not relative to the ignore file's own directory: the file lives in the plugin folder, while the files it governs are under `data/assets/`, so gitignore's own relative-to-self rule would match nothing.
 
+## File icons
+
+- The icons are VS Code's default file icon theme, `vs-seti`, which is a font (`seti.woff`) plus a mapping table (`vs-seti-icon-theme.json`), both MIT. SiYuan only renders icons from `<symbol>` definitions, so `scripts/build-file-icons.py` converts every glyph the table references into an SVG path, writes the theme's `fontColor` onto it and writes `src/file-icons.ts`. That file is generated: refresh it with
+  `python scripts/build-file-icons.py --font seti.woff --theme vs-seti-icon-theme.json --out src/file-icons.ts --commit <sha>`
+  (needs `fonttools`); the two inputs come from `extensions/theme-seti/icons/` at that commit.
+- Seti's `_c`, `_c_1` and `_c_2` are the same glyph with different `fontColor` (C source, C header, Objective-C). The generator keeps one symbol per glyph/colour pair, so those files differ in colour; `_todo` has no `fontColor` and falls back to `currentColor`. Only the default colours are generated — the JSON's light-theme variants differ slightly and are not shipped.
+- Resolution follows VS Code: exact file name, then the longest extension suffix (`a.spec.ts` before `a.ts`), then the language. `src/file-icon.ts` holds the hljs-to-VS-Code language translation, because Seti's `languageIds` uses VS Code ids while `guessLanguage` returns hljs ids, plus the extensionless names VS Code resolves by language (`Dockerfile`, `Makefile`, `.gitignore`). Anything unmatched falls back to `ICON_TAB`.
+- A custom tab's icon cannot be changed through the SDK: `Tab` exposes only `updateTitle`. `updateTabIcon` writes the public `icon` field and the head element's `<use xlink:href>`; both have to move together when the file switcher changes files.
+
 ## Kernel APIs
 
 - Assets are reachable only through workspace-relative paths (`/api/asset/resolveAssetPath` → `/api/file/getFile` / `/api/file/putFile`); the kernel rejects paths outside the workspace, and writing needs the administrator role.

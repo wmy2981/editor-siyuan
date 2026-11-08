@@ -16,6 +16,8 @@
 
 只处理工作区 `assets/` 目录下的文件。指向工作区外绝对路径的链接（`file:///...`）不做处理。.sy 预览只处理工作区内的笔记文档。
 
+页签、文件切换菜单与插件菜单项显示文件对应语言的图标，颜色取自 VS Code 默认的 Seti 文件图标主题；那里没有对应语言的文件回退到插件自己的单色图标。
+
 ## 语法配色
 
 插件设置里的「语法配色」决定编辑器怎么上色。
@@ -98,3 +100,5 @@ npm run preview    # 仅按 assets/preview.html 重拍 assets/preview.png
 ## 许可证
 
 [MIT](./LICENSE)
+
+文件图标由 VS Code 的 Seti 图标主题生成，同为 MIT 许可：VS Code © Microsoft Corporation，Seti UI © 2014 Jesse Weed。见 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md)。

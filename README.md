@@ -16,6 +16,8 @@ Three ways in:
 
 Only files in the workspace's `assets/` folder are handled. Links to absolute paths outside the workspace (`file:///...`) are left alone. The `.sy` preview only handles notes inside the workspace.
 
+Tabs, the file switcher and the plugin menu entries show the file's language icon in its Seti colour, taken from VS Code's default file icon theme. Files whose language has no icon there fall back to the plugin's own monochrome icon.
+
 ## Syntax colours
 
 **Syntax colours** in the plugin settings decides how the editor paints code.
@@ -98,3 +100,5 @@ npm run preview    # re-shoot assets/preview.png from assets/preview.html alone
 ## License
 
 [MIT](./LICENSE)
+
+The file icons are generated from VS Code's Seti icon theme, which is MIT licensed: VS Code © Microsoft Corporation, Seti UI © 2014 Jesse Weed. See [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).

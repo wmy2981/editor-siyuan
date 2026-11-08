@@ -9,7 +9,7 @@ import {registerCloseGuard} from "../../src/close-guard";
 import {registerCodeMenu} from "../../src/code-menu";
 import {watchCodeTheme} from "../../src/theme";
 import {loadHljs} from "../../src/hljs";
-import {createView, focusedTab, refreshEditorSettings, watchEditorConfig} from "../../src/view";
+import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig} from "../../src/view";
 
 vi.mock("../../src/settings-panel", () => ({openSettingsPanel: vi.fn()}));
 vi.mock("../../src/open", () => ({registerOpenHandlers: vi.fn(), TAB_TYPE: "textEditor"}));
@@ -20,6 +20,7 @@ vi.mock("../../src/hljs", () => ({loadHljs: vi.fn()}));
 vi.mock("../../src/view", () => ({
     createView: vi.fn(),
     focusedTab: vi.fn(),
+    refreshCodeBlockColors: vi.fn(),
     refreshEditorSettings: vi.fn(),
     watchEditorConfig: vi.fn(),
 }));
@@ -53,7 +54,7 @@ describe("onload", () => {
         expect(plugin.tabs).toHaveLength(1);
         expect(plugin.tabs[0].type).toBe("textEditor");
         expect(plugin.commands).toHaveLength(1);
-        expect(watchCodeTheme).toHaveBeenCalledWith(plugin);
+        expect(watchCodeTheme).toHaveBeenCalledWith(plugin, refreshCodeBlockColors);
         expect(watchEditorConfig).toHaveBeenCalledWith(plugin, expect.any(Function));
         expect(registerOpenHandlers).toHaveBeenCalledWith(expect.objectContaining({plugin}));
         expect(registerCloseGuard).toHaveBeenCalledWith(expect.objectContaining({plugin}));

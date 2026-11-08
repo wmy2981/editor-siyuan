@@ -23,9 +23,12 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  // 跟随思源编辑器背景，深色浅色模式自动切换
-  background-color: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
+  // 跟随思源时这两个变量由 view.ts 按代码块的实际配色写入（见 theme.ts 的 applyCodeBlockColors）：
+  // 思源把代码块主题的 `.hljs{background;color}` 改写成了 `.code-block{…}`，本插件的 DOM 里
+  // 拿不到那两条，所以整套底色与正文色都要从代码块抄过来。插件自带的方案没有这两个变量，
+  // 回落到思源编辑器的底色——方案只换 token 色，底色仍归思源主题。
+  background-color: var(--editor-siyuan-code-background, var(--b3-theme-background));
+  color: var(--editor-siyuan-code-color, var(--b3-theme-on-background));
 
   // ---- 顶部操作条 ----
   &__action {
@@ -170,7 +173,7 @@
 
 .editor-siyuan .cm-editor .cm-content {
   padding: 0;
-  caret-color: var(--b3-theme-on-background);
+  caret-color: var(--editor-siyuan-code-color, var(--b3-theme-on-background));
   // 正文要能选中：思源的 .layout-tab-container 是 user-select: none，而各 WebView
   // 对 contenteditable 元素是否忽略继承来的 none 处理并不一致。思源自己的只读预览
   // 面板 .protyle-preview 也显式写了这一条。
@@ -205,7 +208,7 @@
 }
 
 .editor-siyuan .cm-editor .cm-cursor {
-  border-left-color: var(--b3-theme-on-background);
+  border-left-color: var(--editor-siyuan-code-color, var(--b3-theme-on-background));
 }
 
 // CodeMirror 默认把控制字符染成写死的红色
@@ -215,9 +218,9 @@
 
 // 行号列。
 // 背景必须不透明：CodeMirror 的行号列是 sticky 的，横向滚动时正文会滑到它下面，
-// 透明背景会让两段文字叠在一起。
+// 透明背景会让两段文字叠在一起。颜色与编辑区底色同源，跟随思源时就是代码块的底色。
 .editor-siyuan .cm-editor .cm-gutters {
-  background-color: var(--b3-theme-background);
+  background-color: var(--editor-siyuan-code-background, var(--b3-theme-background));
   color: var(--b3-theme-on-surface-light);
   border: 0;
   font-family: inherit;

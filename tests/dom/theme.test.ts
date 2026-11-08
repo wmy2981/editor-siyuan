@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
+import {describe, expect, it, vi} from "vitest";
 import {Plugin} from "../support/siyuan";
 import {installConfig} from "../support/env";
-import {syncCodeTheme, watchCodeTheme} from "../../src/theme";
+import {applyCodeBlockColors, syncCodeTheme, watchCodeTheme} from "../../src/theme";
 
 const CDN = "/stage/protyle/js/highlight.js/styles";
 const LINK_ID = "editor-siyuan-hljsStyle";
@@ -156,5 +156,65 @@ describe("watchCodeTheme", () => {
         watchCodeTheme(plugin as any);
         plugin.eventBus.emit("ws-main", {cmd: "setAppearance", data: {mode: 2, codeBlockThemeDark: "dark-x"}});
         expect(hrefOf(link())).toBe(`${CDN}/dark-x.min.css?v=11.12.0`);
+    });
+
+    it("样式表加载完成后通知调用方重算配色", () => {
+        const onLoad = vi.fn();
+        const plugin = new Plugin();
+        watchCodeTheme(plugin as any, onLoad);
+        const element = document.createElement("link");
+        element.rel = "stylesheet";
+        element.href = `${CDN}/default.min.css`;
+        document.head.append(element);
+        element.dispatchEvent(new Event("load"));
+        expect(onLoad).toHaveBeenCalledTimes(1);
+        // 别的元素（脚本、图标之类）不算
+        const script = document.createElement("script");
+        document.head.append(script);
+        script.dispatchEvent(new Event("load"));
+        expect(onLoad).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("applyCodeBlockColors", () => {
+    /** 装一份与思源那份同构的代码块样式：基础色被改写到了 .code-block 上。 */
+    function installCodeBlockStyle(color: string, background: string): void {
+        const style = document.createElement("style");
+        style.textContent = `.protyle-wysiwyg .code-block{color:${color};background:${background}}`;
+        document.head.append(style);
+    }
+
+    it("跟随思源时取代码块的实际配色", () => {
+        installCodeBlockStyle("#444444", "rgb(243, 243, 243)");
+        const element = document.createElement("div");
+        applyCodeBlockColors(element, true);
+        expect(element.style.getPropertyValue("--editor-siyuan-code-color")).toBe("rgb(68, 68, 68)");
+        expect(element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("rgb(243, 243, 243)");
+        // 探针不留在页面上
+        expect(document.querySelector(".protyle-wysiwyg")).toBeNull();
+    });
+
+    it("代码块底色是半透明时照抄，和思源里叠在编辑器底色上的效果一致", () => {
+        installCodeBlockStyle("#444444", "rgba(27, 31, 35, 0.05)");
+        const element = document.createElement("div");
+        applyCodeBlockColors(element, true);
+        expect(element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("rgba(27, 31, 35, 0.05)");
+    });
+
+    it("样式表还没就位时不覆盖已有的值", () => {
+        const element = document.createElement("div");
+        element.style.setProperty("--editor-siyuan-code-color", "rgb(1, 2, 3)");
+        applyCodeBlockColors(element, true);
+        expect(element.style.getPropertyValue("--editor-siyuan-code-color")).toBe("rgb(1, 2, 3)");
+        expect(element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("");
+    });
+
+    it("插件自带的方案把两个属性摘掉，回落到思源编辑器底色", () => {
+        installCodeBlockStyle("#444444", "rgb(243, 243, 243)");
+        const element = document.createElement("div");
+        applyCodeBlockColors(element, true);
+        applyCodeBlockColors(element, false);
+        expect(element.style.getPropertyValue("--editor-siyuan-code-color")).toBe("");
+        expect(element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("");
     });
 });

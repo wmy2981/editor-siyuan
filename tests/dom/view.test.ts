@@ -685,6 +685,26 @@ describe("配色方案", () => {
         refreshEditorSettings(makeSettings({highlight: "follow"}));
         expect(tab.element.hasAttribute("data-highlight")).toBe(false);
     });
+
+    it("跟随思源时把代码块的实际配色写成自定义属性", async () => {
+        const style = document.createElement("style");
+        style.textContent = ".protyle-wysiwyg .code-block{color:#444444;background:rgb(13, 17, 23)}";
+        document.head.append(style);
+        const tab = await openReady();
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-code-color")).toBe("rgb(68, 68, 68)");
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("rgb(13, 17, 23)");
+    });
+
+    it("插件方案不抄代码块配色，切回跟随思源时再抄回来", async () => {
+        const style = document.createElement("style");
+        style.textContent = ".protyle-wysiwyg .code-block{color:#444444;background:rgb(13, 17, 23)}";
+        document.head.append(style);
+        settings = makeSettings({highlight: "vscode"});
+        const tab = await openReady();
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("");
+        refreshEditorSettings(makeSettings({highlight: "follow"}));
+        expect(tab.element.style.getPropertyValue("--editor-siyuan-code-background")).toBe("rgb(13, 17, 23)");
+    });
 });
 
 describe("设置联动", () => {

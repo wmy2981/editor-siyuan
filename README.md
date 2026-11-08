@@ -20,10 +20,10 @@ Only files in the workspace's `assets/` folder are handled. Links to absolute pa
 
 **Syntax colours** in the plugin settings decides how the editor paints code.
 
-- **Follow SiYuan** (the default) reuses the code block theme from **Settings - Appearance**, so the editor and code blocks always match.
+- **Follow SiYuan** (the default) reuses the code block theme from **Settings - Appearance** — including the base text colour and the background that theme gives a code block — so the editor looks exactly like a code block.
 - **VS Code** and **GitHub** are complete schemes shipped with the plugin. Each has a light and a dark version, picked by SiYuan's own appearance mode, and each covers the whole token vocabulary highlight.js emits: keywords, types, class and function names, variables and parameters, properties, tags, meta, escapes, regexps, diff lines and markup headings.
 
-The colours come from the platforms themselves (VS Code Light+ / Dark+, GitHub's PrettyLights). Only token colours change: the background stays SiYuan's, so the action bar, gutter, search panel and selection keep the theme's look. Switching schemes recolours editors that are already open.
+The colours come from the platforms themselves (VS Code Light+ / Dark+, GitHub's PrettyLights). For these two schemes only token colours change: the background stays SiYuan's, so the action bar, gutter, search panel and selection keep the theme's look. Switching schemes recolours editors that are already open.
 
 ## Requirements
 

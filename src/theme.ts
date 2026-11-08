@@ -17,6 +17,9 @@
  *
  * 不复用思源那个 `<link id="protyleHljsStyle">`：思源切换主题时会 remove 掉它
  * 再重新插入，我们跟着它会被一起摘掉。
+ *
+ * token 规则是全局的，落到我们的 span 上不需要额外处理；但那两条被改写成 `.code-block`
+ * 的基础色（底色与正文色）不会自己落上来，见下面的 applyCodeBlockColors。
  */
 import type {Plugin} from "siyuan";
 import {debug} from "./debug";
@@ -27,6 +30,10 @@ const HLJS_VERSION = "11.12.0";
 const LINK_ID = "editor-siyuan-hljsStyle";
 const SIYUAN_LINK_ID = "protyleHljsStyle";
 const PLUGINS_STYLE_ID = "pluginsStyle";
+
+/** 代码块实际配色在本插件里的落点（见 index.scss）。 */
+const COLOR_VAR = "--editor-siyuan-code-color";
+const BACKGROUND_VAR = "--editor-siyuan-code-background";
 
 const FALLBACK_LIGHT = "default";
 const FALLBACK_DARK = "github-dark";
@@ -93,13 +100,67 @@ export function syncCodeTheme(): void {
 }
 
 /**
+ * 代码块在当前主题下的实际配色。
+ *
+ * 主题样式表把上游的 `.hljs{background;color}` 改写成全局的 `.code-block{background;color}`，
+ * 而本插件的 DOM 里不能出现 `.code-block`——那是思源自己的块类名，宿主的块逻辑认它。
+ * 于是用一个不可见的代码块结构让宿主的层叠替我们算一遍：色值仍然来自用户选定的那份
+ * 代码块主题（含主题自己给代码块加的底色，比如浅色主题那层半透明遮罩），插件不写死任何颜色。
+ */
+function probeCodeBlockColors(): {color: string; background: string} | undefined {
+    const probe = document.createElement("div");
+    probe.className = "protyle-wysiwyg";
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;" +
+        "pointer-events:none;contain:strict;overflow:hidden;";
+    const block = document.createElement("div");
+    block.className = "code-block";
+    probe.append(block);
+    document.body.append(probe);
+    try {
+        const style = getComputedStyle(block);
+        // 样式表还没就位时底色是透明的，此时留着上一次的值，等它的 load 事件再算一次
+        if (style.backgroundColor === "rgba(0, 0, 0, 0)" || style.backgroundColor === "transparent") {
+            return undefined;
+        }
+        return {color: style.color, background: style.backgroundColor};
+    } finally {
+        probe.remove();
+    }
+}
+
+/**
+ * 跟随思源时，把代码块的实际配色写到元素上。
+ *
+ * 写成两个自定义属性而不是直接改 color / background-color：行号列、光标、选区这些
+ * 也要跟着走，它们分散在几条规则里（见 index.scss），属性只能落在一处。
+ * 换成插件自带的方案时把属性摘掉，样式表里的回落值（思源编辑器底色）就回来了。
+ */
+export function applyCodeBlockColors(element: HTMLElement, follow: boolean): void {
+    if (!follow) {
+        element.style.removeProperty(COLOR_VAR);
+        element.style.removeProperty(BACKGROUND_VAR);
+        return;
+    }
+    const colors = probeCodeBlockColors();
+    if (!colors) {
+        return;
+    }
+    element.style.setProperty(COLOR_VAR, colors.color);
+    element.style.setProperty(BACKGROUND_VAR, colors.background);
+}
+
+/**
  * 订阅外观变更。
  *
  * 外观变更推的是 `setAppearance`，不是 `setConf`（后者只覆盖编辑器、导出这类设置）。
  * 而且思源先把这个事件派发给插件、之后才把新外观写进 `window.siyuan.config`，
  * 所以这里只能读事件里那份外观对象——读全局配置拿到的是切换前的旧值。
+ *
+ * 样式表本身是异步加载的：换主题之后新的色值要等它的 load 事件才读得到，所以再挂一个
+ * 捕获阶段的 load 监听，通知调用方重新抄一遍代码块配色。
  */
-export function watchCodeTheme(plugin: Plugin): void {
+export function watchCodeTheme(plugin: Plugin, onStylesheetLoad?: () => void): void {
     syncCodeTheme();
     plugin.eventBus.on("ws-main", (event: CustomEvent<{cmd?: string; data?: ICodeThemeSource}>) => {
         const detail = event.detail;
@@ -107,4 +168,11 @@ export function watchCodeTheme(plugin: Plugin): void {
             applyAppearance(detail.data);
         }
     });
+    // load 不冒泡，只能在捕获阶段听；切亮暗与换代码主题都会换掉这几种 <link>
+    document.addEventListener("load", (event) => {
+        const target = event.target;
+        if (target instanceof HTMLLinkElement && target.rel === "stylesheet") {
+            onStylesheetLoad?.();
+        }
+    }, true);
 }

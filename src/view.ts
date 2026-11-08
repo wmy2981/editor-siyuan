@@ -49,6 +49,7 @@ import {loadHljs} from "./hljs";
 import {closeSearch, toggleSearchPanel} from "./search";
 import {openLanguageMenu} from "./language-menu";
 import {openMoreMenu} from "./more-menu";
+import {applyCodeBlockColors} from "./theme";
 import {openConfirmDialog} from "./dialog";
 import {openEditorMenu} from "./context-menu";
 import {ICON_SAVE, ICON_WRAP} from "./icons";
@@ -74,6 +75,8 @@ export interface IEditorTab {
     setFontSize(size: number): void;
     /** 设置里改过配色方案后，对已打开的页签立即生效。 */
     setHighlight(scheme: THighlight): void;
+    /** 代码块主题的样式表加载完成后，重抄一遍跟随思源的配色。 */
+    refreshHighlight(): void;
     /** 设置里改过补全开关后，对已打开的页签立即生效；只读页签始终关闭。 */
     setAutocomplete(enabled: boolean): void;
     /** 页签销毁：记光标、暂存未保存内容、释放编辑器。 */
@@ -151,15 +154,22 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
      * index.scss 里所有方案规则都写成 `.editor-siyuan[data-highlight] …`，
      * 于是「跟随思源」既不写属性也不必加 :not()，方案色也不会漏到思源自己的代码块上。
      * 深浅色由思源写在 <html> 上的 data-theme-mode 决定，这里不参与。
+     *
+     * token 色由主题样式表自己落到 token 上，但代码块的基础底色与正文色被思源改写成了
+     * `.code-block{…}`，落不到本插件的 DOM 上，所以跟随思源时还要抄一遍代码块的实际配色
+     * （见 theme.ts 的 applyCodeBlockColors）。
      */
-    const applyHighlight = (scheme: THighlight): void => {
-        if (scheme === "follow") {
+    let scheme: THighlight = settings().highlight;
+    const applyHighlight = (next: THighlight): void => {
+        scheme = next;
+        if (next === "follow") {
             root.removeAttribute("data-highlight");
         } else {
-            root.setAttribute("data-highlight", scheme);
+            root.setAttribute("data-highlight", next);
         }
+        applyCodeBlockColors(root, next === "follow");
     };
-    applyHighlight(settings().highlight);
+    applyHighlight(scheme);
     // data-menu="true" 是思源给「点开菜单的元素」打的标记，两个菜单触发元素都要带上：
     // 宿主的全局 click（boot/globalEvent/click.ts 的 globalClickHideMenu）会在任何 click
     // 之后关掉共享菜单，只有被点元素在菜单内、或带这个标记时才放过——否则点一下按钮，
@@ -345,6 +355,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
         },
         setFontSize: applyFontSize,
         setHighlight: applyHighlight,
+        refreshHighlight: () => applyHighlight(scheme),
         setAutocomplete: (enabled: boolean) => {
             if (editor) {
                 setEditorAutocomplete(editor, enabled);
@@ -611,6 +622,15 @@ export function refreshEditorSettings(settings: Settings, editor: IEditorConf = 
         tab.setHighlight(settings.highlight);
         tab.setAutocomplete(settings.autocomplete);
     });
+}
+
+/**
+ * 代码块主题的样式表加载完成后，让跟随思源的页签重抄一遍配色。
+ *
+ * 切亮暗或换代码主题时，思源换掉的是那份全局样式表，色值要等它加载完才读得到。
+ */
+export function refreshCodeBlockColors(): void {
+    allTabs().forEach((tab) => tab.refreshHighlight());
 }
 
 /**

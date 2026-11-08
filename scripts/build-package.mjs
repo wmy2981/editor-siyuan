@@ -19,6 +19,7 @@ const entries = [
     ["README.md", "README.md"],
     ["README.zh-CN.md", "README_zh_CN.md"],
     ["LICENSE", "LICENSE"],
+    ["THIRD-PARTY-NOTICES.md", "THIRD-PARTY-NOTICES.md"],
     ["src/i18n", "i18n"],
 ];
 

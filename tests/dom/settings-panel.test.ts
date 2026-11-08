@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import type {Plugin as SiyuanPlugin} from "siyuan";
-import {Plugin, Setting, __setFrontend} from "../support/siyuan";
+import {Dialog, Plugin, Setting, __setFrontend} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {
     DEFAULT_EXTENSIONS,
@@ -67,6 +67,10 @@ const labels = {
     forget: "清除记忆",
     forgetTip: "清除提示",
     forgetButton: "清除 {count} 条",
+    forgetConfirmTitle: "清除确认",
+    forgetConfirmBody: "清除提示 {count} 条",
+    forgetConfirm: "确认清除",
+    cancel: "取消",
 };
 
 const t = makeT(labels);
@@ -99,8 +103,18 @@ function open(overrides: Parameters<typeof makeSettings>[0] = {}) {
     return {setting, dialog, control, row, titles, save, cancel, onSave, onForget};
 }
 
-function toggle(element: HTMLElement, checked: boolean): void {
-    const input = element as HTMLInputElement;
+/** 最后弹出来的对话框：二次确认框。 */
+const lastDialog = (): Dialog => Dialog.instances[Dialog.instances.length - 1];
+
+/** 点确认框里的确认按钮（actions[0]）。 */
+const confirm = (dialog: Dialog): void =>
+    dialog.element.querySelector<HTMLElement>('[data-action="0"]')!.click();
+
+/** 点确认框里的取消按钮。 */
+const cancelDialog = (dialog: Dialog): void =>
+    dialog.element.querySelector<HTMLElement>('[data-action="cancel"]')!.click();
+
+function toggle(element: HTMLElement, checked: boolean): void {    const input = element as HTMLInputElement;
     input.checked = checked;
     input.dispatchEvent(new Event("change"));
 }
@@ -408,7 +422,7 @@ describe("openSettingsPanel", () => {
         expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({fontSize: 0}));
     });
 
-    it("清除记忆按钮显示条数，点击后调用 onForget 并刷新", async () => {
+    it("清除记忆按钮显示条数，确认后调用 onForget 并刷新", async () => {
         rememberLanguage("assets/a.js", "javascript");
         const {control, onForget} = open();
         const button = control(labels.forget) as HTMLButtonElement;
@@ -418,8 +432,22 @@ describe("openSettingsPanel", () => {
             forgetMemories();
         });
         button.click();
+        // 先弹二次确认：点按钮本身不清
+        expect(onForget).not.toHaveBeenCalled();
+        expect(lastDialog().element.textContent).toContain("清除提示 1 条");
+        confirm(lastDialog());
         expect(onForget).toHaveBeenCalledTimes(1);
         expect(button.textContent).toBe("清除 0 条");
+    });
+
+    it("清除记忆时取消，什么都不清", () => {
+        rememberLanguage("assets/a.js", "javascript");
+        const {control, onForget} = open();
+        const button = control(labels.forget) as HTMLButtonElement;
+        button.click();
+        cancelDialog(lastDialog());
+        expect(onForget).not.toHaveBeenCalled();
+        expect(button.textContent).toBe("清除 1 条");
     });
 
     it("取消不保存", () => {

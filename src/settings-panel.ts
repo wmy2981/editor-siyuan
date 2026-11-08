@@ -28,6 +28,7 @@ import {
     type TTakeover,
 } from "./config";
 import {rememberedCount} from "./config";
+import {openConfirmDialog} from "./dialog";
 import {isMobileFrontend, isSeparateWindow} from "./frontend";
 import type {T} from "./i18n";
 
@@ -298,9 +299,24 @@ export function openSettingsPanel(options: ISettingsPanelOptions): void {
                 button.textContent = t("forgetButton", {count: rememberedCount()});
             };
             label();
+            // 清空是不可撤销的，而且用户往往是在面板里顺手点的：先问一次
             button.addEventListener("click", () => {
-                options.onForget();
-                label();
+                const count = rememberedCount();
+                openConfirmDialog({
+                    title: t("forgetConfirmTitle"),
+                    text: t("forgetConfirmBody", {count}),
+                    cancelLabel: t("cancel"),
+                    actions: [
+                        {
+                            label: t("forgetConfirm"),
+                            danger: true,
+                            onClick: () => {
+                                options.onForget();
+                                label();
+                            },
+                        },
+                    ],
+                });
             });
             return button;
         },

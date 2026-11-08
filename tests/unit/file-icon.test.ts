@@ -45,6 +45,11 @@ describe("fileIcon", () => {
         expect(fileIcon("/data/box/assets/a.ts#L1")).toBe("iconEditorFileTypescript");
     });
 
+    it(".sy 用思源的默认文档图标", () => {
+        expect(fileIcon("/data/20210808180117-czj9bvb/20241101120000-abc.sy")).toBe("iconFile");
+        expect(fileIcon("/data/box/a.SY?box=20210808180117")).toBe("iconFile");
+    });
+
     it("认不出来时回退插件自己的图标", () => {
         expect(fileIcon("assets/a.txt")).toBe(ICON_TAB);
         expect(fileIcon("assets/a.unknown")).toBe(ICON_TAB);

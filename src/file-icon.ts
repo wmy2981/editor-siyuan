@@ -80,12 +80,19 @@ const LANGUAGE_BY_NAME: Record<string, string> = {
 };
 
 /**
- * VS Code 按 languageId 取 React 图标，而 hljs 把 jsx/tsx 归进 javascript/typescript，
- * 所以这两个扩展名要单独指过去。
+ * 扩展名 → 图标，绕过生成出来的 Seti 映射表。
+ *
+ * jsx/tsx：VS Code 按 languageId 取 React 图标，而 hljs 把这两个扩展名归进
+ * javascript/typescript，所以要单独指过去。
+ *
+ * sy：思源自己的文档格式，用思源的默认文档图标 iconFile——它就是文件树里没有自定义
+ * 图标的文档显示的那个（appearance/icons/litheness，emoji/fileTreeIcon.ts 的 file 项）。
+ * 符号由思源自己注册，这里只引用，不需要 addIcons。
  */
 const EXTRA_EXTENSION_ICONS: Record<string, string> = {
     jsx: FILE_ICON_BY_LANGUAGE.javascriptreact,
     tsx: FILE_ICON_BY_LANGUAGE.typescriptreact,
+    sy: "iconFile",
 };
 
 /**

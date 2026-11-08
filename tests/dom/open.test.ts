@@ -3,6 +3,7 @@ import type {Plugin as SiyuanPlugin} from "siyuan";
 import {Menu, Plugin, __setFrontend, openTab} from "../support/siyuan";
 import {installConfig, makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
+import {fileIcon} from "../../src/file-icon";
 import {ICON_TAB} from "../../src/icons";
 import {openMobileEditor} from "../../src/mobile";
 import {openPopupEditor} from "../../src/popup";
@@ -118,7 +119,7 @@ describe("openSyPreview", () => {
         const custom = (vi.mocked(openTab).mock.calls[0][0] as any).custom;
         expect(custom).toEqual({
             id: "editor-siyuan" + TAB_TYPE,
-            icon: ICON_TAB,
+            icon: fileIcon("/data/box-id/20210808180117.sy"),
             title: "20210808180117",
             data: {link: "/data/box-id/20210808180117.sy", sy: true},
         });
@@ -318,7 +319,11 @@ describe("笔记文档的 .sy 预览菜单", () => {
         settings = makeSettings({previewSy: true});
         const menu = docTree("/doc.sy");
         expect(menu.items).toHaveLength(1);
-        expect(menu.items[0]).toMatchObject({id: "editorSiyuanPreviewSy", label: "预览 .sy 文件", icon: ICON_TAB});
+        expect(menu.items[0]).toMatchObject({
+            id: "editorSiyuanPreviewSy",
+            label: "预览 .sy 文件",
+            icon: fileIcon("/doc.sy"),
+        });
         menu.items[0].click!();
         expect((vi.mocked(openTab).mock.calls[0][0] as any).custom.data)
             .toEqual({link: "/data/box/doc.sy", sy: true});
@@ -377,7 +382,7 @@ describe("openFileList", () => {
         expect(openTab).toHaveBeenCalledTimes(1);
         const custom = (vi.mocked(openTab).mock.calls[0][0] as any).custom;
         expect(custom.id).toBe("editor-siyuan" + TAB_TYPE);
-        expect(custom.icon).toBe(ICON_TAB);
+        expect(custom.icon).toBe(fileIcon("/data/a.json"));
         expect(custom.title).toBe("a.json");
         expect(custom.data).toEqual({link: "/data/a.json", workspace: true, sy: undefined, files: FILES});
     });

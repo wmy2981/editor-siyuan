@@ -33,7 +33,7 @@ import {isMobileFrontend, isSeparateWindow} from "./frontend";
 import {openMobileEditor} from "./mobile";
 import {openPopupEditor} from "./popup";
 import {baseName, config, stripQuery} from "./util";
-import {ICON_TAB} from "./icons";
+import {fileIcon} from "./file-icon";
 import type {T} from "./i18n";
 import type {IViewFile} from "./view";
 
@@ -127,7 +127,7 @@ export function openEditor(deps: IOpenDeps, link: string): void {
         app: deps.app,
         custom: {
             id: deps.plugin.name + TAB_TYPE,
-            icon: ICON_TAB,
+            icon: fileIcon(link),
             // 页签标题只放文件名：资源链接恒为 assets/<文件名>，带上目录不会增加区分度
             title: link.slice("assets/".length),
             data: {link},
@@ -165,7 +165,7 @@ export function openFileList(deps: IOpenDeps, files: IViewFile[], start?: string
         app: deps.app,
         custom: {
             id: deps.plugin.name + TAB_TYPE,
-            icon: ICON_TAB,
+            icon: fileIcon(target.link),
             title: target.title,
             // 候选表跟着 data 走：宿主重启后由同一份 data 重新 init，下拉因此还在
             data: {...data, files},
@@ -196,7 +196,7 @@ export function openSyPreview(deps: IOpenDeps, notebookId: string, path: string)
         app: deps.app,
         custom: {
             id: deps.plugin.name + TAB_TYPE,
-            icon: ICON_TAB,
+            icon: fileIcon(apiPath),
             // 页签标题取文档名（.sy 文件名就是思源里的文档名），去掉扩展名
             title: baseName(path).replace(/\.sy$/i, ""),
             data: {link: apiPath, sy: true},
@@ -219,7 +219,7 @@ function addSyPreviewItem(deps: IOpenDeps, menu: subMenu, notebookId: string, pa
     menu.addItem({
         id: "editorSiyuanPreviewSy",
         label: deps.t("previewSyMenu"),
-        icon: ICON_TAB,
+        icon: fileIcon(path),
         click: () => openSyPreview(deps, notebookId, path),
     });
 }
@@ -280,7 +280,7 @@ export function registerOpenHandlers(deps: IOpenDeps): void {
         const item: IMenu = {
             id: "editorSiyuanOpen",
             label: deps.t("openWithEditor"),
-            icon: ICON_TAB,
+            icon: fileIcon(link),
             click: () => openEditor(deps, link),
         };
         event.detail.menu.addItem(item);

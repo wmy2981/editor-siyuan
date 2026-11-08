@@ -10,6 +10,8 @@ import {Plugin, showMessage, type Custom} from "siyuan";
 import "./index.scss";
 import {DEFAULT_SETTINGS, forgetMemories, initStore, needsExtensionMigration, normalizeSettings, SETTINGS_FILE, type Settings} from "./config";
 import {debug, setDebug} from "./debug";
+import {fileIcon, updateTabIcon} from "./file-icon";
+import {FILE_ICONS} from "./file-icons";
 import {ICONS} from "./icons";
 import {makeT, type T} from "./i18n";
 import {loadHljs} from "./hljs";
@@ -30,7 +32,7 @@ export default class EditorPlugin extends Plugin {
 
     async onload(): Promise<void> {
         this.t = makeT(this.i18n);
-        this.addIcons(ICONS);
+        this.addIcons(ICONS + FILE_ICONS);
         await initStore(this);
         // 只读模式下 loadData 会 reject，取不到就退回默认值，不能让插件整体加载失败
         let stored: unknown;
@@ -90,6 +92,7 @@ export default class EditorPlugin extends Plugin {
                         // 页签头与 data 一起改：关闭确认与「已经打开就聚焦」都靠 data.link
                         data.link = file.link;
                         this.tab?.updateTitle(file.title);
+                        updateTabIcon(this.tab, fileIcon(file.link));
                     },
                 }, plugin.t, () => plugin.settings));
             },

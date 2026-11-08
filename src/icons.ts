@@ -13,6 +13,9 @@
  * 按官方插件文档的做法从 Lucide 取 save，只改线宽等属性，路径数据保持原样。
  * 换行图标同样取自 Lucide 的 wrap-text：思源没有换行图标，它的代码块用「更多」菜单里的
  * 开关代替，而这里要的是操作条上的状态按钮。
+ *
+ * 文件类型图标不在这里：它们来自 VS Code 的 Seti 主题（见 file-icons.ts）。
+ * ICON_TAB 是认不出语言的文件、以及菜单里那些「插件动作」的统一回退图标。
  */
 
 export const ICON_TAB = "iconEditorText";

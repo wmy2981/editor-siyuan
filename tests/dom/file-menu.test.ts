@@ -28,6 +28,22 @@ describe("openFileMenu", () => {
         expect(lastMenu().items[0].label).toBe("&lt;b&gt;a&lt;/b&gt;.json");
     });
 
+    it("每项用文件自己的语言图标", () => {
+        openFileMenu(
+            document.createElement("span"),
+            [
+                {link: "/data/a.py", title: "a.py", workspace: true},
+                {link: "/data/b.md", title: "b.md", workspace: true},
+            ],
+            "/data/a.py",
+            vi.fn(),
+        );
+        expect(lastMenu().items.map((item) => item.icon)).toEqual([
+            "iconEditorFilePython",
+            "iconEditorFileMarkdown",
+        ]);
+    });
+
     it("点一项就把那个文件交回调用方", () => {
         const onPick = vi.fn();
         openFileMenu(document.createElement("span"), FILES, "/data/a.json", onPick);

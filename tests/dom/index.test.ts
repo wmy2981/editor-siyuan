@@ -11,6 +11,7 @@ import {watchCodeTheme} from "../../src/theme";
 import {loadHljs} from "../../src/hljs";
 import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig} from "../../src/view";
 import {openPrettierConfig, migratePrettierConfig} from "../../src/prettier-config";
+import {ICON_TAB} from "../../src/icons";
 
 vi.mock("../../src/settings-panel", () => ({openSettingsPanel: vi.fn()}));
 vi.mock("../../src/open", () => ({registerOpenHandlers: vi.fn(), TAB_TYPE: "textEditor"}));
@@ -131,13 +132,15 @@ describe("onload", () => {
         vi.mocked(createView).mockReturnValue({dispose: vi.fn()} as any);
         await plugin.onload();
         const updateTitle = vi.fn();
+        const headElement = document.createElement("div");
+        headElement.innerHTML = `<svg class="item__graphic"><use xlink:href="#${ICON_TAB}"></use></svg>`;
         const files = [
             {link: "/data/a.json", title: "a.json", workspace: true},
             {link: "/data/b.json", title: "b.json", workspace: true},
         ];
         const model = {
             element: document.createElement("div"),
-            tab: {title: "a.json", updateTitle},
+            tab: {title: "a.json", icon: ICON_TAB, headElement, updateTitle},
             data: {link: "/data/a.json", workspace: true, files},
         };
         plugin.tabs[0].init.call(model);
@@ -148,6 +151,8 @@ describe("onload", () => {
         host.onSwitch!(files[1]);
         expect(model.data.link).toBe("/data/b.json");
         expect(updateTitle).toHaveBeenCalledWith("b.json");
+        expect(model.tab.icon).toBe("iconEditorFileJson");
+        expect(headElement.querySelector("use")!.getAttribute("xlink:href")).toBe("#iconEditorFileJson");
     });
 
     it("命令没有页签时提示，有页签时保存", async () => {

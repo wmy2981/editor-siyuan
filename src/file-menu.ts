@@ -6,7 +6,7 @@
  * 与思源自己的列表一致。
  */
 import {Menu} from "siyuan";
-import {ICON_TAB} from "./icons";
+import {fileIcon} from "./file-icon";
 import {escapeHtml} from "./util";
 import type {IViewFile} from "./view";
 
@@ -20,7 +20,7 @@ export function openFileMenu(
     for (const file of files) {
         menu.addItem({
             id: file.link,
-            icon: ICON_TAB,
+            icon: fileIcon(file.link),
             // 宿主的 Menu 把 label 当 HTML 插进菜单项，文件名必须转义
             label: escapeHtml(file.title),
             current: file.link === currentLink,

@@ -27,14 +27,14 @@ import {
     type Plugin,
     type subMenu,
 } from "siyuan";
-import {allowedExtensions, hasAllowedExtension, type Settings, type TTakeover} from "./config";
-import {debug} from "./debug";
-import {isMobileFrontend, isSeparateWindow} from "./frontend";
+import {allowedExtensions, hasAllowedExtension, type Settings, type TTakeover} from "../core/config";
+import {debug} from "../core/debug";
+import {isMobileFrontend, isSeparateWindow} from "../core/frontend";
 import {openMobileEditor} from "./mobile";
 import {openPopupEditor} from "./popup";
-import {baseName, config, stripQuery} from "./util";
-import {fileIcon} from "./file-icon";
-import type {T} from "./i18n";
+import {baseName, config, stripQuery} from "../core/util";
+import {fileIcon} from "../files/file-icon";
+import type {T} from "../i18n";
 import type {IViewFile} from "./view";
 
 /**

@@ -11,15 +11,15 @@ import {
     rememberCursor,
     rememberLanguage,
     stashedEntry,
-} from "../../src/config";
+} from "../../src/core/config";
 import {makeT} from "../../src/i18n";
-import {openConfirmDialog} from "../../src/dialog";
-import {openLanguageMenu} from "../../src/language-menu";
-import {openMoreMenu} from "../../src/more-menu";
-import {openFileMenu} from "../../src/file-menu";
-import {openEditorMenu} from "../../src/context-menu";
-import {toggleSearchPanel, closeSearch} from "../../src/search";
-import {loadHljs} from "../../src/hljs";
+import {openConfirmDialog} from "../../src/dialogs/dialog";
+import {openLanguageMenu} from "../../src/menus/language-menu";
+import {openMoreMenu} from "../../src/menus/more-menu";
+import {openFileMenu} from "../../src/menus/file-menu";
+import {openEditorMenu} from "../../src/menus/context-menu";
+import {toggleSearchPanel, closeSearch} from "../../src/editor/search";
+import {loadHljs} from "../../src/editor/hljs";
 import {
     applyRedo,
     applyUndo,
@@ -34,7 +34,7 @@ import {
     setEditorLineNumbers,
     setEditorLineWrap,
     setEditorReadOnly,
-} from "../../src/editor";
+} from "../../src/editor/editor";
 import {
     allTabs,
     createView,
@@ -44,21 +44,21 @@ import {
     watchEditorConfig,
     type IEditorTab,
     type IViewHost,
-} from "../../src/view";
+} from "../../src/views/view";
 import {
     readAssetText,
     resolveAsset,
     resolveWorkspaceFile,
     writeAssetText,
-} from "../../src/asset";
+} from "../../src/files/asset";
 
-vi.mock("../../src/asset", () => ({
+vi.mock("../../src/files/asset", () => ({
     readAssetText: vi.fn(),
     resolveAsset: vi.fn(),
     resolveWorkspaceFile: vi.fn(),
     writeAssetText: vi.fn(),
 }));
-vi.mock("../../src/editor", () => ({
+vi.mock("../../src/editor/editor", () => ({
     applyRedo: vi.fn(),
     applyUndo: vi.fn(),
     canRedo: vi.fn(),
@@ -73,13 +73,13 @@ vi.mock("../../src/editor", () => ({
     setEditorLineWrap: vi.fn(),
     setEditorReadOnly: vi.fn(),
 }));
-vi.mock("../../src/hljs", () => ({loadHljs: vi.fn()}));
-vi.mock("../../src/dialog", () => ({openConfirmDialog: vi.fn()}));
-vi.mock("../../src/search", () => ({toggleSearchPanel: vi.fn(), closeSearch: vi.fn()}));
-vi.mock("../../src/language-menu", () => ({openLanguageMenu: vi.fn()}));
-vi.mock("../../src/more-menu", () => ({openMoreMenu: vi.fn()}));
-vi.mock("../../src/file-menu", () => ({openFileMenu: vi.fn()}));
-vi.mock("../../src/context-menu", () => ({openEditorMenu: vi.fn()}));
+vi.mock("../../src/editor/hljs", () => ({loadHljs: vi.fn()}));
+vi.mock("../../src/dialogs/dialog", () => ({openConfirmDialog: vi.fn()}));
+vi.mock("../../src/editor/search", () => ({toggleSearchPanel: vi.fn(), closeSearch: vi.fn()}));
+vi.mock("../../src/menus/language-menu", () => ({openLanguageMenu: vi.fn()}));
+vi.mock("../../src/menus/more-menu", () => ({openMoreMenu: vi.fn()}));
+vi.mock("../../src/menus/file-menu", () => ({openFileMenu: vi.fn()}));
+vi.mock("../../src/menus/context-menu", () => ({openEditorMenu: vi.fn()}));
 
 const t = makeT({
     loading: "加载中…",

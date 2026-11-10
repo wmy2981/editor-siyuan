@@ -35,8 +35,8 @@ import {
 } from "@codemirror/search";
 import type {EditorState, Extension} from "@codemirror/state";
 import type {EditorView, Panel, ViewUpdate} from "@codemirror/view";
-import {escapeHtml} from "./util";
-import type {T} from "./i18n";
+import {escapeHtml} from "../core/util";
+import type {T} from "../i18n";
 
 /**
  * 查找面板的开关：没开就打开，开着就收起并把焦点交回正文。

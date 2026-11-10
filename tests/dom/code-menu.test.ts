@@ -3,18 +3,18 @@ import type {Plugin as SiyuanPlugin} from "siyuan";
 import {Menu, Plugin, ProtyleMethod, showMessage} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {ICON_TAB} from "../../src/icons";
-import {registerCodeMenu} from "../../src/code-menu";
-import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
-import {prepareFormat} from "../../src/prettier-config";
+import {ICON_TAB} from "../../src/core/icons";
+import {registerCodeMenu} from "../../src/menus/code-menu";
+import {canFormat, canMinify, formatText, minifyText} from "../../src/format/format";
+import {prepareFormat} from "../../src/format/prettier-config";
 
-vi.mock("../../src/format", () => ({
+vi.mock("../../src/format/format", () => ({
     canFormat: vi.fn(),
     canMinify: vi.fn(),
     formatText: vi.fn(),
     minifyText: vi.fn(),
 }));
-vi.mock("../../src/prettier-config", () => ({prepareFormat: vi.fn()}));
+vi.mock("../../src/format/prettier-config", () => ({prepareFormat: vi.fn()}));
 
 const t = makeT({
     formatCode: "格式化代码",

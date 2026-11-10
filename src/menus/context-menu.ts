@@ -20,11 +20,11 @@ import {Menu, showMessage} from "siyuan";
 import {redo, redoDepth, selectAll, undo, undoDepth} from "@codemirror/commands";
 import {openSearchPanel} from "@codemirror/search";
 import type {EditorView} from "@codemirror/view";
-import {debug} from "./debug";
-import {isBrowserFrontend} from "./frontend";
-import {ICON_SAVE} from "./icons";
-import {config} from "./util";
-import type {T} from "./i18n";
+import {debug} from "../core/debug";
+import {isBrowserFrontend} from "../core/frontend";
+import {ICON_SAVE} from "../core/icons";
+import {config} from "../core/util";
+import type {T} from "../i18n";
 
 export interface IMenuDeps {
     view: EditorView;

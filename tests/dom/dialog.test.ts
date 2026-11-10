@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from "vitest";
 import {Dialog} from "../support/siyuan";
-import {openConfirmDialog} from "../../src/dialog";
+import {openConfirmDialog} from "../../src/dialogs/dialog";
 
 const lastDialog = (): Dialog => Dialog.instances[Dialog.instances.length - 1];
 

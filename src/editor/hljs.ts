@@ -8,7 +8,7 @@
  * 用的同一个版本与同一批语言，复用之后我们的 token 分类与思源代码块逐字一致，
  * 也不必把 hljs 打进插件包。代价是依赖这个内部静态路径，脚本加载失败时降级为纯文本。
  */
-import {debug} from "./debug";
+import {debug} from "../core/debug";
 
 const HLJS_CDN = "/stage/protyle/js/highlight.js";
 // 与思源 constants 无关：思源在 highlightRender.ts 里写死了这两个查询串版本号

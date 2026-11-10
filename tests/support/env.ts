@@ -5,7 +5,7 @@
  * `window.hljs`）。setup.ts 在每个测试前重新安装默认值，测试里可以再覆盖。
  */
 import {vi} from "vitest";
-import {DEFAULT_SETTINGS, type Settings} from "../../src/config";
+import {DEFAULT_SETTINGS, type Settings} from "../../src/core/config";
 
 /** 覆盖项按对象递归合并；数组整体替换。 */
 function merge<T>(base: T, overrides: unknown): T {

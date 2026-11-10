@@ -14,7 +14,7 @@
  * 所以标记只可能出现在插件自己的 i18n 文案里，外部字符串不会因为这两个字符被当成标记。
  */
 import {Dialog} from "siyuan";
-import {escapeHtml} from "./util";
+import {escapeHtml} from "../core/util";
 
 export interface IDialogAction {
     label: string;

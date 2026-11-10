@@ -2,19 +2,19 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {Dialog} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {confirmClose} from "../../src/unsaved";
-import {openPopupEditor} from "../../src/popup";
+import {confirmClose} from "../../src/views/unsaved";
+import {openPopupEditor} from "../../src/views/popup";
 
 const {state} = vi.hoisted(() => ({
     state: {view: undefined as any, existing: undefined as any, confirmOpen: false},
 }));
 
-vi.mock("../../src/view", () => ({
+vi.mock("../../src/views/view", () => ({
     createView: vi.fn(() => state.view),
     tabFor: vi.fn(() => state.existing),
 }));
-vi.mock("../../src/unsaved", () => ({confirmClose: vi.fn()}));
-vi.mock("../../src/dialog", () => ({confirmDialogOpen: vi.fn(() => state.confirmOpen)}));
+vi.mock("../../src/views/unsaved", () => ({confirmClose: vi.fn()}));
+vi.mock("../../src/dialogs/dialog", () => ({confirmDialogOpen: vi.fn(() => state.confirmOpen)}));
 
 const t = makeT({});
 const settings = makeSettings();
@@ -85,7 +85,7 @@ describe("openPopupEditor", () => {
     });
 
     it("视图挂在浮层里，标题交给对话框，操作条不重复", async () => {
-        const {createView} = await import("../../src/view");
+        const {createView} = await import("../../src/views/view");
         openPopupEditor(deps, {link: "assets/a.txt", sy: true}, "a.txt");
         const dialog = Dialog.instances[0];
         const mount = dialog.element.querySelector(".editor-siyuan-popup__mount");

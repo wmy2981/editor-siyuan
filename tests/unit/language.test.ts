@@ -5,7 +5,7 @@ import {
     guessLanguage,
     normalizeLanguage,
     PLAIN_TEXT,
-} from "../../src/language";
+} from "../../src/files/language";
 
 describe("guessLanguage", () => {
     it("把扩展名映射成 hljs 语言标识", () => {

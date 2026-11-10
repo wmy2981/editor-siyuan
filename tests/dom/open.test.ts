@@ -3,10 +3,10 @@ import type {Plugin as SiyuanPlugin} from "siyuan";
 import {Menu, Plugin, __setFrontend, openTab} from "../support/siyuan";
 import {installConfig, makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {fileIcon} from "../../src/file-icon";
-import {ICON_TAB} from "../../src/icons";
-import {openMobileEditor} from "../../src/mobile";
-import {openPopupEditor} from "../../src/popup";
+import {fileIcon} from "../../src/files/file-icon";
+import {ICON_TAB} from "../../src/core/icons";
+import {openMobileEditor} from "../../src/views/mobile";
+import {openPopupEditor} from "../../src/views/popup";
 import {
     openEditor,
     openFileList,
@@ -14,10 +14,10 @@ import {
     registerOpenHandlers,
     TAB_TYPE,
     type IOpenDeps,
-} from "../../src/open";
+} from "../../src/views/open";
 
-vi.mock("../../src/mobile", () => ({openMobileEditor: vi.fn()}));
-vi.mock("../../src/popup", () => ({openPopupEditor: vi.fn()}));
+vi.mock("../../src/views/mobile", () => ({openMobileEditor: vi.fn()}));
+vi.mock("../../src/views/popup", () => ({openPopupEditor: vi.fn()}));
 
 const t = makeT({
     openWithEditor: "使用 Editor 打开",

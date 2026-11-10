@@ -21,8 +21,8 @@ import * as prettierYaml from "prettier/plugins/yaml";
 import * as prettierMarkdown from "prettier/plugins/markdown";
 import {minify as uglify} from "uglify-js/tools/exports.js";
 import {minify as csso} from "csso";
-import {extensionOf} from "./config";
-import {baseName} from "./util";
+import {extensionOf} from "../core/config";
+import {baseName} from "../core/util";
 
 /** prettier 的插件表；prettier 自己按 parser 名字挑，所以一次给全。 */
 const PLUGINS = [

@@ -24,7 +24,7 @@ import {
     rememberedLanguage,
     rememberLanguage,
     stashedEntry,
-} from "../../src/config";
+} from "../../src/core/config";
 
 const asPlugin = (plugin: Plugin): SiyuanPlugin => plugin as unknown as SiyuanPlugin;
 

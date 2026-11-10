@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {binaryResponse, installConfig, jsonResponse, stubFetch, utf8} from "../support/env";
-import type {IAssetRef} from "../../src/asset";
+import type {IAssetRef} from "../../src/files/asset";
 
 const RESOLVE = "/api/asset/resolveAssetPath";
 const STAT = "/api/asset/statAsset";
@@ -8,11 +8,11 @@ const PUT_FILE = "/api/file/putFile";
 const WORKSPACE_INFO = "/api/system/getWorkspaceInfo";
 
 /** asset.ts 缓存了工作区绝对路径，每个测试重新求值模块，避免测试之间互相污染。 */
-let asset: typeof import("../../src/asset");
+let asset: typeof import("../../src/files/asset");
 
 beforeEach(async () => {
     vi.resetModules();
-    asset = await import("../../src/asset");
+    asset = await import("../../src/files/asset");
 });
 
 function resolveFetch(options: {data?: string; size?: number; statCode?: number; statMsg?: string} = {}) {

@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {__setFrontend} from "../support/siyuan";
-import {frontend, isBrowserFrontend, isMobileFrontend, isSeparateWindow} from "../../src/frontend";
+import {frontend, isBrowserFrontend, isMobileFrontend, isSeparateWindow} from "../../src/core/frontend";
 
 describe("frontend", () => {
     it("把宿主的前端标识原样返回", () => {

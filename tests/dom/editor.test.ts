@@ -15,7 +15,7 @@ import {
     setEditorLineNumbers,
     setEditorLineWrap,
     setEditorReadOnly,
-} from "../../src/editor";
+} from "../../src/editor/editor";
 
 const t = makeT({});
 const views: EditorView[] = [];

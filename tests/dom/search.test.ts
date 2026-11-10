@@ -9,8 +9,8 @@ import {
     setSearchQuery,
 } from "@codemirror/search";
 import {makeT} from "../../src/i18n";
-import {createEditor} from "../../src/editor";
-import {closeSearch, siyuanSearch, toggleSearchPanel} from "../../src/search";
+import {createEditor} from "../../src/editor/editor";
+import {closeSearch, siyuanSearch, toggleSearchPanel} from "../../src/editor/search";
 
 const t = makeT({
     searchPlaceholder: "查找",

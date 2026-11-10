@@ -50,10 +50,10 @@ import {defaultKeymap, history, historyKeymap, indentWithTab, redo, redoDepth, u
 import {acceptCompletion, completionKeymap} from "@codemirror/autocomplete";
 import {searchKeymap} from "@codemirror/search";
 import {indentOnInput, indentUnit} from "@codemirror/language";
-import {normalizeLanguage, PLAIN_TEXT} from "./language";
+import {normalizeLanguage, PLAIN_TEXT} from "../files/language";
 import {autocompleteExtensions} from "./complete";
 import {siyuanSearch, toggleSearchPanel} from "./search";
-import type {T} from "./i18n";
+import type {T} from "../i18n";
 
 export const readOnlyCompartment = new Compartment();
 export const lineNumbersCompartment = new Compartment();

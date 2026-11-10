@@ -5,7 +5,7 @@
  * 由思源的 third-languages.js 提供，未加载时会 getLanguage 失败。
  * 所以这里只做「猜一个候选」，真正用之前一律回到可用语言表里确认。
  */
-import {extensionOf} from "./config";
+import {extensionOf} from "../core/config";
 
 export const PLAIN_TEXT = "plaintext";
 

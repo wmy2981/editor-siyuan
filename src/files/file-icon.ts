@@ -5,9 +5,9 @@
  * 文件名 → 扩展名（从最长的复合扩展名开始试） → 语言。都认不出来时回退插件自己的图标。
  */
 import {FILE_ICON_BY_EXTENSION, FILE_ICON_BY_LANGUAGE, FILE_ICON_BY_NAME} from "./file-icons";
-import {ICON_TAB} from "./icons";
+import {ICON_TAB} from "../core/icons";
 import {guessLanguage} from "./language";
-import {baseName, stripQuery} from "./util";
+import {baseName, stripQuery} from "../core/util";
 
 /**
  * hljs 语言标识 → VS Code 语言标识。

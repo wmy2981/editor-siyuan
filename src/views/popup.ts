@@ -16,11 +16,11 @@
  *   所以 Esc 必须在捕获阶段拦下，否则有未保存改动时能绕过确认直接丢掉浮层。
  */
 import {Dialog} from "siyuan";
-import {confirmDialogOpen} from "./dialog";
+import {confirmDialogOpen} from "../dialogs/dialog";
 import {confirmClose} from "./unsaved";
 import {createView, tabFor, type IEditorTab, type IViewFile} from "./view";
-import type {Settings} from "./config";
-import type {T} from "./i18n";
+import type {Settings} from "../core/config";
+import type {T} from "../i18n";
 
 export interface IPopupDeps {
     t: T;

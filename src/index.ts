@@ -7,22 +7,22 @@
  *   没有工厂的自定义页签会被启动清理逻辑删掉。
  */
 import {Plugin, showMessage, type Custom} from "siyuan";
-import "./index.scss";
-import {DEFAULT_SETTINGS, forgetMemories, initStore, needsExtensionMigration, normalizeSettings, SETTINGS_FILE, type Settings} from "./config";
-import {debug, setDebug} from "./debug";
-import {fileIcon, updateTabIcon} from "./file-icon";
-import {FILE_ICONS} from "./file-icons";
-import {ICONS} from "./icons";
+import "./styles/index.scss";
+import {DEFAULT_SETTINGS, forgetMemories, initStore, needsExtensionMigration, normalizeSettings, SETTINGS_FILE, type Settings} from "./core/config";
+import {debug, setDebug} from "./core/debug";
+import {fileIcon, updateTabIcon} from "./files/file-icon";
+import {FILE_ICONS} from "./files/file-icons";
+import {ICONS} from "./core/icons";
 import {makeT, type T} from "./i18n";
-import {loadHljs} from "./hljs";
-import {registerOpenHandlers, TAB_TYPE} from "./open";
-import {migratePrettierConfig, openPrettierConfig} from "./prettier-config";
-import {openSettingsPanel} from "./settings-panel";
-import {registerCloseGuard} from "./close-guard";
-import {registerCodeMenu} from "./code-menu";
-import {watchCodeTheme} from "./theme";
-import {config} from "./util";
-import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig, type IEditorTab, type IViewFile} from "./view";
+import {loadHljs} from "./editor/hljs";
+import {registerOpenHandlers, TAB_TYPE} from "./views/open";
+import {migratePrettierConfig, openPrettierConfig} from "./format/prettier-config";
+import {openSettingsPanel} from "./dialogs/settings-panel";
+import {registerCloseGuard} from "./views/close-guard";
+import {registerCodeMenu} from "./menus/code-menu";
+import {watchCodeTheme} from "./editor/theme";
+import {config} from "./core/util";
+import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig, type IEditorTab, type IViewFile} from "./views/view";
 
 export default class EditorPlugin extends Plugin {
     private settings: Settings = {...DEFAULT_SETTINGS};

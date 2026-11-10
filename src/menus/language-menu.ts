@@ -6,10 +6,10 @@
  * 直接列出来太长。筛选列表的写法取自思源 AI 设置里选模型的那个下拉。
  */
 import {Menu} from "siyuan";
-import {isMobileFrontend} from "./frontend";
-import {availableLanguages} from "./language";
-import {escapeHtml} from "./util";
-import type {T} from "./i18n";
+import {isMobileFrontend} from "../core/frontend";
+import {availableLanguages} from "../files/language";
+import {escapeHtml} from "../core/util";
+import type {T} from "../i18n";
 
 /** 上下键在可见条目间移动高亮，跳过被搜索过滤掉的。 */
 function moveFocus(list: HTMLElement, event: KeyboardEvent): void {

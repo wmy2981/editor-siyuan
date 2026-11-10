@@ -22,8 +22,8 @@
  * 的基础色（底色与正文色）不会自己落上来，见下面的 applyCodeBlockColors。
  */
 import type {Plugin} from "siyuan";
-import {debug} from "./debug";
-import {config} from "./util";
+import {debug} from "../core/debug";
+import {config} from "../core/util";
 
 const HLJS_CDN = "/stage/protyle/js/highlight.js";
 const HLJS_VERSION = "11.12.0";

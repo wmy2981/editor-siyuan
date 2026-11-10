@@ -16,13 +16,13 @@
  * 所以按思源的代码块语言补一个扩展名，之后的判断与页签里那两项完全共用（见 format.ts）。
  */
 import {ProtyleMethod, showMessage, type IProtyle, type Plugin, type subMenu} from "siyuan";
-import {canFormat, canMinify, formatText, minifyText} from "./format";
-import {prepareFormat} from "./prettier-config";
-import {debug} from "./debug";
-import {guessLanguage} from "./language";
-import {ICON_TAB} from "./icons";
-import type {Settings} from "./config";
-import type {T} from "./i18n";
+import {canFormat, canMinify, formatText, minifyText} from "../format/format";
+import {prepareFormat} from "../format/prettier-config";
+import {debug} from "../core/debug";
+import {guessLanguage} from "../files/language";
+import {ICON_TAB} from "../core/icons";
+import type {Settings} from "../core/config";
+import type {T} from "../i18n";
 
 export interface ICodeMenuDeps {
     plugin: Plugin;

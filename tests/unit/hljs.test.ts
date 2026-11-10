@@ -5,13 +5,13 @@ const CDN = "/stage/protyle/js/highlight.js";
 const SCRIPT_ID = "editor-siyuan-hljsScript";
 const THIRD_ID = "editor-siyuan-hljsThirdScript";
 
-let loadHljs: typeof import("../../src/hljs").loadHljs;
-let setDebug: typeof import("../../src/debug").setDebug;
+let loadHljs: typeof import("../../src/editor/hljs").loadHljs;
+let setDebug: typeof import("../../src/core/debug").setDebug;
 
 beforeEach(async () => {
     vi.resetModules();
-    ({loadHljs} = await import("../../src/hljs"));
-    ({setDebug} = await import("../../src/debug"));
+    ({loadHljs} = await import("../../src/editor/hljs"));
+    ({setDebug} = await import("../../src/core/debug"));
 });
 
 const scripts = (): HTMLScriptElement[] =>

@@ -3,17 +3,17 @@ import type {Plugin as SiyuanPlugin} from "siyuan";
 import {Plugin, __setActiveTab, __setFrontend} from "../support/siyuan";
 import {installConfig, makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {openConfirmDialog} from "../../src/dialog";
-import {registerCloseGuard} from "../../src/close-guard";
-import {confirmClose} from "../../src/unsaved";
+import {openConfirmDialog} from "../../src/dialogs/dialog";
+import {registerCloseGuard} from "../../src/views/close-guard";
+import {confirmClose} from "../../src/views/unsaved";
 
 const {tabs} = vi.hoisted(() => ({tabs: [] as any[]}));
 
-vi.mock("../../src/view", () => ({
+vi.mock("../../src/views/view", () => ({
     allTabs: () => tabs,
     tabFor: (link: string) => tabs.find((tab) => tab.link === link),
 }));
-vi.mock("../../src/dialog", () => ({openConfirmDialog: vi.fn()}));
+vi.mock("../../src/dialogs/dialog", () => ({openConfirmDialog: vi.fn()}));
 
 const t = makeT({
     closeTitle: "关闭未保存的页签",

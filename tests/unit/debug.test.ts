@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {debug, setDebug} from "../../src/debug";
+import {debug, setDebug} from "../../src/core/debug";
 
 afterEach(() => {
     setDebug(false);

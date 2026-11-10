@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {keywordList} from "../../src/complete";
+import {keywordList} from "../../src/editor/complete";
 
 describe("keywordList", () => {
     it("空格分隔的字符串", () => {

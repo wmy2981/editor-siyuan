@@ -11,7 +11,7 @@
  * 编码固定按 UTF-8 读写，但保留原文件的 BOM 与换行风格：不然打开再保存一次，
  * 一个 CRLF 文件会被整体改写，diff 全红。
  */
-import {baseName, config} from "./util";
+import {baseName, config} from "../core/util";
 
 const GET_FILE = "/api/file/getFile";
 const PUT_FILE = "/api/file/putFile";

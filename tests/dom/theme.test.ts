@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from "vitest";
 import {Plugin} from "../support/siyuan";
 import {installConfig} from "../support/env";
-import {applyCodeBlockColors, syncCodeTheme, watchCodeTheme} from "../../src/theme";
+import {applyCodeBlockColors, syncCodeTheme, watchCodeTheme} from "../../src/editor/theme";
 
 const CDN = "/stage/protyle/js/highlight.js/styles";
 const LINK_ID = "editor-siyuan-hljsStyle";

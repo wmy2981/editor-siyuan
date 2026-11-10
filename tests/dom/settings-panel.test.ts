@@ -7,9 +7,9 @@ import {
     forgetMemories,
     initStore,
     rememberLanguage,
-} from "../../src/config";
+} from "../../src/core/config";
 import {makeT} from "../../src/i18n";
-import {openSettingsPanel} from "../../src/settings-panel";
+import {openSettingsPanel} from "../../src/dialogs/settings-panel";
 
 const labels = {
     takeover: "接管点击",

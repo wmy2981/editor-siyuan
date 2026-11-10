@@ -26,11 +26,11 @@ import {
     type TLineNumbers,
     type TOpenMode,
     type TTakeover,
-} from "./config";
-import {rememberedCount} from "./config";
+} from "../core/config";
+import {rememberedCount} from "../core/config";
 import {openConfirmDialog} from "./dialog";
-import {isMobileFrontend, isSeparateWindow} from "./frontend";
-import type {T} from "./i18n";
+import {isMobileFrontend, isSeparateWindow} from "../core/frontend";
+import type {T} from "../i18n";
 
 export interface ISettingsPanelOptions {
     /** 面板标题，用插件的显示名。 */

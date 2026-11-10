@@ -9,7 +9,7 @@
 // 一层底色，操作条、行号列、搜索面板也不必跟着调色。
 //
 // 深浅色由思源写在 <html> 上的 data-theme-mode 决定：没有 JS 参与，用户切换外观时
-// 下一帧就是新配色。选择器权重见 schemes/_scope.scss。
+// 下一帧就是新配色。选择器权重见 styles/schemes/_scope.scss。
 
 .editor-siyuan[data-highlight="vscode"] {
     --editor-siyuan-hl-text: #000000;

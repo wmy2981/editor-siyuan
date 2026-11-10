@@ -8,10 +8,10 @@
  * 单独成一个模块是为了不被 view.ts 反向依赖：close-guard.ts 与 view.ts 都要用它，
  * 而 close-guard.ts 自己又依赖 view.ts。
  */
-import {openConfirmDialog} from "./dialog";
-import {baseName} from "./util";
-import type {Settings} from "./config";
-import type {T} from "./i18n";
+import {openConfirmDialog} from "../dialogs/dialog";
+import {baseName} from "../core/util";
+import type {Settings} from "../core/config";
+import type {T} from "../i18n";
 
 /** 关闭确认要问的对象：页签视图、浮层视图与移动端对话框视图都满足它。 */
 export interface IClosable {

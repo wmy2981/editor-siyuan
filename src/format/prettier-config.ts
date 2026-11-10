@@ -14,14 +14,14 @@
  * prettier 自己的默认值；落盘之后就以文件为准，思源里的 Tab 空格数再改也不影响格式化。
  * 从没有配置文件的旧版本升级上来时，因此不会改变格式化结果（见 migratePrettierConfig）。
  */
-import {readWorkspaceText, writeWorkspaceText} from "./asset";
-import {isMobileFrontend} from "./frontend";
-import {openMobileEditor} from "./mobile";
-import {openPopupEditor} from "./popup";
-import {baseName, config} from "./util";
-import type {IOpenDeps} from "./open";
-import type {IViewFile} from "./view";
-import type {T} from "./i18n";
+import {readWorkspaceText, writeWorkspaceText} from "../files/asset";
+import {isMobileFrontend} from "../core/frontend";
+import {openMobileEditor} from "../views/mobile";
+import {openPopupEditor} from "../views/popup";
+import {baseName, config} from "../core/util";
+import type {IOpenDeps} from "../views/open";
+import type {IViewFile} from "../views/view";
+import type {T} from "../i18n";
 
 /** 插件自己的存储目录，与 loadData / saveData 落盘的位置相同。 */
 const DATA_DIR = "/data/storage/petal/editor-siyuan";

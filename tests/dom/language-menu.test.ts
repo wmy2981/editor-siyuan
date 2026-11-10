@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {Menu, __setFrontend} from "../support/siyuan";
 import {installHljs} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {openLanguageMenu} from "../../src/language-menu";
+import {openLanguageMenu} from "../../src/menus/language-menu";
 
 const t = makeT({
     languageSearch: "搜索语言",

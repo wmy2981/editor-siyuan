@@ -7,7 +7,7 @@
  * （--b3-theme-background / --b3-theme-on-background / --b3-font-family-editor-code
  * / --b3-font-size-editor / --b3-border-color / --b3-list-hover）。
  * 语法配色两条路：默认用用户选定的那份 hljs 主题样式表（见 theme.ts），
- * 选了插件自带的方案则改用 schemes/ 里的色板，靠根元素的 data-highlight 属性切换。
+ * 选了插件自带的方案则改用 styles/schemes/ 里的色板，靠根元素的 data-highlight 属性切换。
  *
  * 顶部一条操作条：左侧是可点的语言标签、撤销 / 重做与换行开关，右侧依次是查找、只读切换与保存。
  * 图标按钮只留 aria-label 给读屏，不挂思源的 .ariaLabel：那一栏紧贴正文，
@@ -15,7 +15,7 @@
  */
 import {showMessage, type Plugin} from "siyuan";
 import type {EditorView} from "@codemirror/view";
-import {readAssetText, resolveAsset, resolveWorkspaceFile, writeAssetText, type IAssetRef, type IAssetText} from "./asset";
+import {readAssetText, resolveAsset, resolveWorkspaceFile, writeAssetText, type IAssetRef, type IAssetText} from "../files/asset";
 import {
     applyRedo,
     applyUndo,
@@ -30,7 +30,7 @@ import {
     setEditorLineNumbers,
     setEditorLineWrap,
     setEditorReadOnly,
-} from "./editor";
+} from "../editor/editor";
 import {
     dropStash,
     putStash,
@@ -41,22 +41,22 @@ import {
     stashedEntry,
     type Settings,
     type THighlight,
-} from "./config";
-import {guessLanguage, PLAIN_TEXT} from "./language";
-import {isMobileFrontend} from "./frontend";
-import {debug} from "./debug";
-import {loadHljs} from "./hljs";
-import {closeSearch, toggleSearchPanel} from "./search";
-import {openLanguageMenu} from "./language-menu";
-import {openMoreMenu} from "./more-menu";
-import {openFileMenu} from "./file-menu";
-import {applyCodeBlockColors} from "./theme";
-import {openConfirmDialog} from "./dialog";
+} from "../core/config";
+import {guessLanguage, PLAIN_TEXT} from "../files/language";
+import {isMobileFrontend} from "../core/frontend";
+import {debug} from "../core/debug";
+import {loadHljs} from "../editor/hljs";
+import {closeSearch, toggleSearchPanel} from "../editor/search";
+import {openLanguageMenu} from "../menus/language-menu";
+import {openMoreMenu} from "../menus/more-menu";
+import {openFileMenu} from "../menus/file-menu";
+import {applyCodeBlockColors} from "../editor/theme";
+import {openConfirmDialog} from "../dialogs/dialog";
 import {confirmClose} from "./unsaved";
-import {openEditorMenu} from "./context-menu";
-import {ICON_SAVE, ICON_WRAP} from "./icons";
-import {config, escapeHtml} from "./util";
-import type {T} from "./i18n";
+import {openEditorMenu} from "../menus/context-menu";
+import {ICON_SAVE, ICON_WRAP} from "../core/icons";
+import {config, escapeHtml} from "../core/util";
+import type {T} from "../i18n";
 
 export interface IEditorTab {
     readonly link: string;
@@ -188,7 +188,7 @@ export function createView(host: IViewHost, t: T, settings: () => Settings): IEd
      * 配色方案的开关只有一个属性。
      *
      * 跟随思源时属性不存在，插件方案才写出 `data-highlight="vscode|github"`：
-     * index.scss 里所有方案规则都写成 `.editor-siyuan[data-highlight] …`，
+     * styles/index.scss 里所有方案规则都写成 `.editor-siyuan[data-highlight] …`，
      * 于是「跟随思源」既不写属性也不必加 :not()，方案色也不会漏到思源自己的代码块上。
      * 深浅色由思源写在 <html> 上的 data-theme-mode 决定，这里不参与。
      *

@@ -1,29 +1,29 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {Plugin, showMessage} from "../support/siyuan";
 import {installConfig, makeSettings} from "../support/env";
-import {DEFAULT_SETTINGS, SETTINGS_FILE} from "../../src/config";
+import {DEFAULT_SETTINGS, SETTINGS_FILE} from "../../src/core/config";
 import EditorPlugin from "../../src/index";
-import {openSettingsPanel} from "../../src/settings-panel";
-import {registerOpenHandlers} from "../../src/open";
-import {registerCloseGuard} from "../../src/close-guard";
-import {registerCodeMenu} from "../../src/code-menu";
-import {watchCodeTheme} from "../../src/theme";
-import {loadHljs} from "../../src/hljs";
-import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig} from "../../src/view";
-import {openPrettierConfig, migratePrettierConfig} from "../../src/prettier-config";
-import {ICON_TAB} from "../../src/icons";
+import {openSettingsPanel} from "../../src/dialogs/settings-panel";
+import {registerOpenHandlers} from "../../src/views/open";
+import {registerCloseGuard} from "../../src/views/close-guard";
+import {registerCodeMenu} from "../../src/menus/code-menu";
+import {watchCodeTheme} from "../../src/editor/theme";
+import {loadHljs} from "../../src/editor/hljs";
+import {createView, focusedTab, refreshCodeBlockColors, refreshEditorSettings, watchEditorConfig} from "../../src/views/view";
+import {openPrettierConfig, migratePrettierConfig} from "../../src/format/prettier-config";
+import {ICON_TAB} from "../../src/core/icons";
 
-vi.mock("../../src/settings-panel", () => ({openSettingsPanel: vi.fn()}));
-vi.mock("../../src/open", () => ({registerOpenHandlers: vi.fn(), TAB_TYPE: "textEditor"}));
-vi.mock("../../src/close-guard", () => ({registerCloseGuard: vi.fn()}));
-vi.mock("../../src/code-menu", () => ({registerCodeMenu: vi.fn()}));
-vi.mock("../../src/theme", () => ({watchCodeTheme: vi.fn()}));
-vi.mock("../../src/hljs", () => ({loadHljs: vi.fn()}));
-vi.mock("../../src/prettier-config", () => ({
+vi.mock("../../src/dialogs/settings-panel", () => ({openSettingsPanel: vi.fn()}));
+vi.mock("../../src/views/open", () => ({registerOpenHandlers: vi.fn(), TAB_TYPE: "textEditor"}));
+vi.mock("../../src/views/close-guard", () => ({registerCloseGuard: vi.fn()}));
+vi.mock("../../src/menus/code-menu", () => ({registerCodeMenu: vi.fn()}));
+vi.mock("../../src/editor/theme", () => ({watchCodeTheme: vi.fn()}));
+vi.mock("../../src/editor/hljs", () => ({loadHljs: vi.fn()}));
+vi.mock("../../src/format/prettier-config", () => ({
     migratePrettierConfig: vi.fn(),
     openPrettierConfig: vi.fn(),
 }));
-vi.mock("../../src/view", () => ({
+vi.mock("../../src/views/view", () => ({
     createView: vi.fn(),
     focusedTab: vi.fn(),
     refreshCodeBlockColors: vi.fn(),

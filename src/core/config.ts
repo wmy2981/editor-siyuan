@@ -64,7 +64,7 @@ export interface Settings {
      * 语法配色方案。
      *
      * follow 时配色与思源代码块逐项一致（连同一份主题样式表）；vscode / github 是插件自带的
-     * 完整色板，各含浅色与深色两版，按思源的当前外观自动切换，见 index.scss 与 schemes/。
+     * 完整色板，各含浅色与深色两版，按思源的当前外观自动切换，见 styles/index.scss 与 styles/schemes/。
      */
     highlight: THighlight;
     /** 输入时是否弹出代码提示。 */

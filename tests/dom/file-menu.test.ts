@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from "vitest";
 import {Menu} from "../support/siyuan";
-import {openFileMenu} from "../../src/file-menu";
+import {openFileMenu} from "../../src/menus/file-menu";
 
 const FILES = [
     {link: "/data/a.json", title: "a.json", workspace: true},

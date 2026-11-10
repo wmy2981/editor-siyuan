@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
+import {canFormat, canMinify, formatText, minifyText} from "../../src/format/format";
 
 describe("canFormat", () => {
     it("有 prettier parser 的语言与扩展名组合为真", () => {

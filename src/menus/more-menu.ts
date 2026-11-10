@@ -12,12 +12,12 @@
  */
 import {Menu, showMessage} from "siyuan";
 import type {EditorView} from "@codemirror/view";
-import {absolutePath} from "./asset";
-import {canFormat, canMinify, formatText, minifyText} from "./format";
-import {prepareFormat} from "./prettier-config";
-import {debug} from "./debug";
-import {writeClipboard} from "./util";
-import type {T} from "./i18n";
+import {absolutePath} from "../files/asset";
+import {canFormat, canMinify, formatText, minifyText} from "../format/format";
+import {prepareFormat} from "../format/prettier-config";
+import {debug} from "../core/debug";
+import {writeClipboard} from "../core/util";
+import type {T} from "../i18n";
 
 export interface IMoreMenuDeps {
     view: EditorView;

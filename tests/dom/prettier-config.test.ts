@@ -1,10 +1,10 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {readWorkspaceText, writeWorkspaceText} from "../../src/asset";
+import {readWorkspaceText, writeWorkspaceText} from "../../src/files/asset";
 import {installConfig, makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
 import {__setFrontend} from "../support/siyuan";
-import {openMobileEditor} from "../../src/mobile";
-import {openPopupEditor} from "../../src/popup";
+import {openMobileEditor} from "../../src/views/mobile";
+import {openPopupEditor} from "../../src/views/popup";
 import {
     ensurePrettierConfig,
     ignoredBy,
@@ -12,14 +12,14 @@ import {
     openPrettierConfig,
     PRETTIER_FILES,
     prepareFormat,
-} from "../../src/prettier-config";
+} from "../../src/format/prettier-config";
 
-vi.mock("../../src/asset", () => ({
+vi.mock("../../src/files/asset", () => ({
     readWorkspaceText: vi.fn(),
     writeWorkspaceText: vi.fn(),
 }));
-vi.mock("../../src/mobile", () => ({openMobileEditor: vi.fn()}));
-vi.mock("../../src/popup", () => ({openPopupEditor: vi.fn()}));
+vi.mock("../../src/views/mobile", () => ({openMobileEditor: vi.fn()}));
+vi.mock("../../src/views/popup", () => ({openPopupEditor: vi.fn()}));
 
 const t = makeT({prettierConfigInvalid: "prettier 配置不是合法的 JSON 对象"});
 

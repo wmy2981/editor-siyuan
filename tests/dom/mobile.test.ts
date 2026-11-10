@@ -2,18 +2,18 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {Dialog} from "../support/siyuan";
 import {makeSettings} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {confirmClose} from "../../src/unsaved";
-import {openMobileEditor} from "../../src/mobile";
+import {confirmClose} from "../../src/views/unsaved";
+import {openMobileEditor} from "../../src/views/mobile";
 
 const {state} = vi.hoisted(() => ({
     state: {view: undefined as any, existing: undefined as any},
 }));
 
-vi.mock("../../src/view", () => ({
+vi.mock("../../src/views/view", () => ({
     createView: vi.fn(() => state.view),
     tabFor: vi.fn(() => state.existing),
 }));
-vi.mock("../../src/unsaved", () => ({confirmClose: vi.fn()}));
+vi.mock("../../src/views/unsaved", () => ({confirmClose: vi.fn()}));
 
 const t = makeT({});
 const settings = makeSettings();
@@ -63,7 +63,7 @@ describe("openMobileEditor", () => {
     });
 
     it("视图挂在对话框里的 mount 上，并带上标题与关闭回调", async () => {
-        const {createView} = await import("../../src/view");
+        const {createView} = await import("../../src/views/view");
         openMobileEditor(deps, {link: "assets/a.txt", sy: true}, "a.txt");
         const dialog = Dialog.instances[0];
         const mount = dialog.element.querySelector(".editor-siyuan-dialog__mount");
@@ -80,7 +80,7 @@ describe("openMobileEditor", () => {
     });
 
     it("关闭按钮先走确认流程，确认后才销毁视图与对话框", async () => {
-        const {createView} = await import("../../src/view");
+        const {createView} = await import("../../src/views/view");
         openMobileEditor(deps, {link: "assets/a.txt"}, "a.txt");
         const dialog = Dialog.instances[0];
         const host = vi.mocked(createView).mock.calls[0][0];
@@ -96,7 +96,7 @@ describe("openMobileEditor", () => {
     });
 
     it("确认后销毁不再重复 dispose", async () => {
-        const {createView} = await import("../../src/view");
+        const {createView} = await import("../../src/views/view");
         openMobileEditor(deps, {link: "assets/a.txt"}, "a.txt");
         const dialog = Dialog.instances[0];
         const host = vi.mocked(createView).mock.calls[0][0];

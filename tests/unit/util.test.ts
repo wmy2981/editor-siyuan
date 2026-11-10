@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {baseName, config, escapeHtml, stripQuery} from "../../src/util";
+import {baseName, config, escapeHtml, stripQuery} from "../../src/core/util";
 
 describe("escapeHtml", () => {
     it("转义全部五个 HTML 敏感字符", () => {

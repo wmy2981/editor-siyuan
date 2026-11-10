@@ -6,9 +6,9 @@
  * 与思源自己的列表一致。
  */
 import {Menu} from "siyuan";
-import {fileIcon} from "./file-icon";
-import {escapeHtml} from "./util";
-import type {IViewFile} from "./view";
+import {fileIcon} from "../files/file-icon";
+import {escapeHtml} from "../core/util";
+import type {IViewFile} from "../views/view";
 
 export function openFileMenu(
     anchor: HTMLElement,

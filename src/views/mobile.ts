@@ -12,8 +12,8 @@
 import {Dialog} from "siyuan";
 import {confirmClose} from "./unsaved";
 import {createView, tabFor, type IEditorTab, type IViewFile} from "./view";
-import type {Settings} from "./config";
-import type {T} from "./i18n";
+import type {Settings} from "../core/config";
+import type {T} from "../i18n";
 
 export interface IMobileOpenDeps {
     t: T;

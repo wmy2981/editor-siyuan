@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from "vitest";
-import {fileIcon, updateTabIcon} from "../../src/file-icon";
-import {FILE_ICONS, FILE_ICON_BY_EXTENSION, FILE_ICON_BY_LANGUAGE, FILE_ICON_BY_NAME} from "../../src/file-icons";
-import {ICON_TAB} from "../../src/icons";
+import {fileIcon, updateTabIcon} from "../../src/files/file-icon";
+import {FILE_ICONS, FILE_ICON_BY_EXTENSION, FILE_ICON_BY_LANGUAGE, FILE_ICON_BY_NAME} from "../../src/files/file-icons";
+import {ICON_TAB} from "../../src/core/icons";
 
 /** FILE_ICONS 里注册过的 symbol id。 */
 const registered = new Set(

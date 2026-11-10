@@ -12,12 +12,12 @@
  * 未保存的内容都不会静默丢失，下次打开同一文件时会问要不要恢复。
  */
 import {getActiveTab, type Custom, type Plugin} from "siyuan";
-import {config} from "./util";
+import {config} from "../core/util";
 import {allTabs, tabFor, type IEditorTab} from "./view";
 import {confirmClose} from "./unsaved";
-import {isBrowserFrontend, isMobileFrontend} from "./frontend";
-import type {Settings} from "./config";
-import type {T} from "./i18n";
+import {isBrowserFrontend, isMobileFrontend} from "../core/frontend";
+import type {Settings} from "../core/config";
+import type {T} from "../i18n";
 
 export interface ICloseDeps {
     plugin: Plugin;

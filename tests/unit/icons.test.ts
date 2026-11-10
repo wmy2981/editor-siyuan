@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {ICONS, ICON_SAVE, ICON_TAB, ICON_WRAP} from "../../src/icons";
+import {ICONS, ICON_SAVE, ICON_TAB, ICON_WRAP} from "../../src/core/icons";
 
 describe("icons", () => {
     it("暴露三个固定的 symbol id", () => {

@@ -6,7 +6,7 @@ import type {EditorView} from "@codemirror/view";
 import {Menu, showMessage, __setFrontend} from "../support/siyuan";
 import {installConfig} from "../support/env";
 import {makeT} from "../../src/i18n";
-import {openEditorMenu} from "../../src/context-menu";
+import {openEditorMenu} from "../../src/menus/context-menu";
 
 vi.mock("@codemirror/search", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@codemirror/search")>()),

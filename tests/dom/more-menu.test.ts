@@ -1,17 +1,17 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {Menu, showMessage} from "../support/siyuan";
 import {makeT} from "../../src/i18n";
-import {openMoreMenu} from "../../src/more-menu";
-import {canFormat, canMinify, formatText, minifyText} from "../../src/format";
-import {prepareFormat} from "../../src/prettier-config";
+import {openMoreMenu} from "../../src/menus/more-menu";
+import {canFormat, canMinify, formatText, minifyText} from "../../src/format/format";
+import {prepareFormat} from "../../src/format/prettier-config";
 
-vi.mock("../../src/format", () => ({
+vi.mock("../../src/format/format", () => ({
     canFormat: vi.fn(),
     canMinify: vi.fn(),
     formatText: vi.fn(),
     minifyText: vi.fn(),
 }));
-vi.mock("../../src/prettier-config", () => ({prepareFormat: vi.fn()}));
+vi.mock("../../src/format/prettier-config", () => ({prepareFormat: vi.fn()}));
 
 const t = makeT({
     copy: "复制",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生成 src/file-icons.ts：把 VS Code 默认 Seti 文件图标主题的字形转成 SVG symbol。
+"""生成 src/files/file-icons.ts：把 VS Code 默认 Seti 文件图标主题的字形转成 SVG symbol。
 
 Seti 主题本身是字体（seti.woff）+ 映射表（vs-seti-icon-theme.json），
 思源的图标接口只认 <symbol>，所以这里把每个被映射引用的字形转成路径。
